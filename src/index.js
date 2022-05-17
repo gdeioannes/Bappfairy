@@ -119,6 +119,11 @@ const makePublicDir = async (config, publicSubDirs) => {
   await Promise.all(relativePaths.map(async (relativePath) => {
     if (path.extname(relativePath) != '.css') return
 
+    // Don't encapsulate normalize.css because it increases the
+    // specificity of its selectors which might cause them to
+    // override other styles.
+    if (path.basename(relativePath) == 'normalize.css') return
+
     let css = (await fs.readFile(relativePath)).toString()
     css = encapsulateCSS(css, config.source)
     await fs.writeFile(relativePath, css)
