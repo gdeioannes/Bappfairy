@@ -234,6 +234,7 @@ class StyleWriter extends Writer {
 
     // Make URLs absolute so webpack won't throw any errors
     return sheet.replace(/url\(([^)]+)\)/g, (match, url) => {
+      url = url.replace(/^"(.*)"$/, '$1')
       if (/^(.+):\/\//.test(url)) return match
 
       url = path.resolve('/', url)
