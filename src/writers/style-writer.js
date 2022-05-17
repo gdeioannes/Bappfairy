@@ -237,7 +237,9 @@ class StyleWriter extends Writer {
       url = url.replace(/^"(.*)"$/, '$1')
       if (/^(.+):\/\//.test(url)) return match
 
-      url = path.resolve('/', url)
+      if (!url.startsWith('data:')) {
+        url = path.resolve('/', url)
+      }
       return `url(${url})`
     })
   }
