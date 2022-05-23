@@ -379,9 +379,7 @@ class ViewWriter extends Writer {
         }
 
         render() {
-          const proxies = ${this.className}.Controller !== ${this.className} ? transformProxies(this.props.children) : {
-            ==>${this[_].composeProxiesDefault()}<==
-          }
+          const proxies = transformProxies(this.props.children)
 
           return (
             <span>
@@ -420,12 +418,6 @@ class ViewWriter extends Writer {
     }).join('\n\n')
 
     return escape(css.trim())
-  }
-
-  _composeProxiesDefault() {
-    return this[_].sockets.map((socket) => {
-      return `'${socket}': [],`
-    }).join('\n')
   }
 
   _composeChildImports() {
