@@ -433,10 +433,7 @@ class ViewWriter extends Writer {
       return `import ${child.className} from './${child.className}'`
     })
 
-    // Line skip
-    imports.push('')
-
-    return imports.join('\n')
+    return [...new Set(imports), ''].join('\n')
   }
 
   _composeScriptsDeclerations() {
