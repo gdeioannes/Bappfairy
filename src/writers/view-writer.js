@@ -235,7 +235,7 @@ class ViewWriter extends Writer {
 
       $el.attr('af-sock', null)
       // Workaround would help identify the closing tag
-      el.tagName += `-af-sock-${socketName}`
+      el.tagName += `-af-sock-${i}-${socketName}`
     })
 
     // Refetch modified html
@@ -502,11 +502,11 @@ function bindJSX(jsx, children = []) {
   return jsx
     // Open close
     .replace(
-      /<([\w._-]+)-af-sock-([\w_-]+)(.*?)>([^]*)<\/\1-af-sock-\2>/g, (
-      match, el, sock, attrs, children
+      /<([\w._-]+)-af-sock-(\d+)-([\w_-]+)(.*?)>([^]*)<\/\1-af-sock-\2-\3>/g, (
+      match, el, index, sock, attrs, children
     ) => (
       // If there are nested sockets
-      /<[\w._-]+-af-sock-[\w_-]+/.test(children) ? (
+      /<[\w._-]+-af-sock-\d+-[\w_-]+/.test(children) ? (
         `{map(proxies['${sock}'], props => <${el} ${mergeProps(attrs)}>{createScope(props.children, proxies => <React.Fragment>${bindJSX(children)}</React.Fragment>)}</${el}>)}`
       ) : (
         `{map(proxies['${sock}'], props => <${el} ${mergeProps(attrs)}>{props.children ? props.children : <React.Fragment>${children}</React.Fragment>}</${el}>)}`
@@ -514,7 +514,7 @@ function bindJSX(jsx, children = []) {
     ))
     // Self closing
     .replace(
-      /<([\w._-]+)-af-sock-([\w_-]+)(.*?)\/>/g, (
+      /<([\w._-]+)-af-sock-\d+-([\w_-]+)(.*?)\/>/g, (
       match, el, sock, attrs
     ) => (
       `{map(proxies['${sock}'], props => <${el} ${mergeProps(attrs)}>{props.children}</${el}>)}`
