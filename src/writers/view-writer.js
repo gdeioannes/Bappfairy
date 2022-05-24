@@ -52,7 +52,7 @@ class ViewWriter extends Writer {
 
     const index = flattenChildren(viewWriters
       .filter((viewWriter) => viewWriter.folder == '.'))
-        .sort((a, b) => a.className < b.className)
+        .sort((a, b) => a.className < b.className ? -1 : 1)
         .map((viewWriter) => (
           `export { default as ${viewWriter.className} } from './${viewWriter.className}'`
         )).join('\n')
