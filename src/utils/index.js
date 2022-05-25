@@ -1,6 +1,8 @@
 export { default as Internal } from './internal'
 export { default as requireText } from './requireText'
 
+const version = require('root-require')('./package.json').version
+
 // Useful for nested strings that should be evaluated
 export const escape = (str, quote) => {
   str = str.replace(/\\/g, '\\\\')
@@ -93,6 +95,7 @@ export const freeText = (text) => {
 // Calls freeText() and disables lint
 export const freeLint = (script) => {
   return freeText(`
+    /* Auto-generated using Appfairy ${version}.  DO NOT EDIT! */
     /* eslint-disable */
 
     ==>${freeText(script)}<==
