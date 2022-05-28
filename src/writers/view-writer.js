@@ -312,6 +312,7 @@ class ViewWriter extends Writer {
     this.html = options.html
     this.source = options.source
     this.folder = options.folder
+    this.importStyles = options.importStyles
   }
 
   async write(dir, ctrlsDir) {
@@ -418,6 +419,10 @@ class ViewWriter extends Writer {
   }
 
   _composeStyleImports() {
+    if (!this[_].importStyles) {
+      return ''
+    }
+
     const hrefs = this[_].styles.map(({ type, body }) => {
       return type == 'href' && body
     }).filter(Boolean)

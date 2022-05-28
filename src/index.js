@@ -88,12 +88,11 @@ const transpileHTMLFile = async (
     name: path.basename(htmlFile).split('.').slice(0, -1).join('.'),
     baseUrl: config.baseUrl,
     source: config.source,
+    importStyles: config.importStyles,
   })
 
   setScripts(scriptWriter, $head, $)
-  if (config.importStyles) {
-    setStyles(viewWriter, styleWriter, $head, $)
-  }
+  setStyles(viewWriter, styleWriter, $head, $)
   setHTML(viewWriter, $body, $)
   setWfData(viewWriter, dataAttrs)
 
