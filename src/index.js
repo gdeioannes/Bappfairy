@@ -109,14 +109,10 @@ const makePublicDir = async (config, publicFiles) => {
     )
   }))
 
-  // Resolving relative paths
-  const filePaths = await reread(config.input)
-
-  const relativePaths = filePaths.map((filePath) => {
-    const relativePath = path.relative(config.input, filePath)
-
-    return `${publicDir}/${relativePath}`
-  })
+  // Output paths
+  const relativePaths = publicFiles.map((filePath) => (
+    `${publicDir}/${filePath}`
+  ))
 
   // Encapsulate CSS files
   await Promise.all(relativePaths.map(async (relativePath) => {
