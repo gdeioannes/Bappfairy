@@ -319,19 +319,18 @@ class ViewWriter extends Writer {
     const filePath = path.normalize(`${dir}/${this.folder}/${this.className}.js`)
     const childFilePaths = [filePath]
 
+    await fs.mkdir(path.dirname(filePath), { recursive: true })
+
     const writingChildren = this[_].children.map(async (child) => {
       const filePaths = await child.write(dir, ctrlsDir)
       childFilePaths.push(...filePaths)
     })
 
-    const writeSelf = async () => {
-      await fs.mkdir(path.dirname(filePath), { recursive: true })
-      await fs.writeFile(filePath, this[_].compose(dir, ctrlsDir))
-    }
+    const writingSelf = fs.writeFile(filePath, this[_].compose(dir, ctrlsDir))
 
     await Promise.all([
       ...writingChildren,
-      writeSelf(),
+      writingSelf,
     ])
 
     return childFilePaths
