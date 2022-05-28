@@ -419,10 +419,6 @@ class ViewWriter extends Writer {
   }
 
   _composeStyleImports() {
-    if (!this[_].importStyles) {
-      return ''
-    }
-
     const hrefs = this[_].styles.map(({ type, body }) => {
       return type == 'href' && body
     }).filter(Boolean)
@@ -433,9 +429,11 @@ class ViewWriter extends Writer {
 
     let css = ''
 
-    css += hrefs.map((href) => {
-      return `@import url(${href});`
-    }).join('\n')
+    if (this[_].importStyles) {
+      css += hrefs.map((href) => {
+        return `@import url(${href});`
+      }).join('\n')
+    }
 
     css += '\n\n'
 
