@@ -14,12 +14,14 @@ export const add = async (files) => {
   let unstaged = await Promise.all([
     execa('git', [
       'diff',
+      '-z',
       '--name-only',
       '--',
       '.',
     ]),
     execa('git', [
       'ls-files',
+      '-z',
       '--others',
       '--exclude-standard',
       '--full-name',
@@ -28,7 +30,7 @@ export const add = async (files) => {
     ]),
   ]).then((results) => {
     return results.reduce((unstaged, { stdout }) => {
-      return unstaged.concat(stdout.split('\n').filter(Boolean))
+      return unstaged.concat(stdout.split('\0').filter(Boolean))
     }, [])
   })
 
@@ -68,6 +70,7 @@ export const commit = (files, message, stdio = 'inherit') => {
 export const removeAppfairyFiles = async () => {
   const { stdout: diffFiles } = await execa('git', [
     'diff',
+    '-z',
     '--name-only',
     '--',
     '.',
@@ -97,6 +100,7 @@ export const removeAppfairyFiles = async () => {
   // List all files but deleted ones
   let { stdout: files } = await execa('git', [
     'diff',
+    '-z',
     '--name-only',
     '--diff-filter=ACMRTUXB',
     `${hash}~1`,
@@ -104,7 +108,7 @@ export const removeAppfairyFiles = async () => {
     '--',
     '.',
   ])
-  files = files.split('\n').filter(Boolean)
+  files = files.split('\0').filter(Boolean)
 
   const { stdout: root } = await execa('git', [
     'rev-parse',
