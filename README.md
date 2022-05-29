@@ -2,12 +2,12 @@ Changes made in this fork:
 
 - Support for page folders (namespaces for pages)
 - Support for multiple sockets with the same name (single proxy referring to multiple elements in the view)
-- Support for multiple child views with the same name (only last one is used)
+- Support for multiple child views with the same name (only first one is used)
 - Option to disable styles imports (if adding them by hand to React's index.html)
-- Don't encapsulate normalize.css (changes specificity of selectors which needs to stay low)
+- No encapsulation of normalize.css (it changes specificity of selectors and they need to stay low)
 - Bugfixes
 
-This version is published in the `@awahlig` namespace and can be installed using:
+This version is published in the `@awahlig` scope and can be installed using:
 
     $ npm install @awahlig/appfairy -g
 
