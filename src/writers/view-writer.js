@@ -373,7 +373,9 @@ class ViewWriter extends Writer {
 
     if (href) {
       type = 'href'
-      body = /^\w+:\/\//.test(href) ? href : path.resolve('/', href)
+      body = /^\w+:\/\//.test(href) ? href
+        : href.startsWith('/') ? href
+        : `/${href}`
     }
     else {
       type = 'sheet'
