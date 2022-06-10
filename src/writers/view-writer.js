@@ -32,7 +32,7 @@ const flattenChildren = (children = [], flatten = []) => {
 }
 
 const dotRelative = (fromPath, toPath) => {
-  let result = path.relative(fromPath, toPath)
+  const result = path.relative(fromPath, toPath).replace(/\\/g, '/')
   return result.startsWith('.') ? result : `./${result}`
 }
 
