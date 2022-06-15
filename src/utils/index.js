@@ -149,3 +149,23 @@ export const padLeft = (str, length, char = ' ') => {
 
   return Array(length).join(char) + str
 }
+
+// css/webflow.css -> /css/webflow.css
+export const absoluteHref = (href) => {
+  if (!href || href.startsWith('/')) {
+    // already absolute
+    return href
+  }
+  if (/^\w+:\/\//.test(href)) {
+    // full "scheme://foo" url
+    return href
+  }
+  if (href.startsWith('.')) {
+    // For example: "../../css/webflow.css"
+    // This happens when a page is in a folder and the href of
+    // css goes back to the root.  Since we want an absolute
+    // path anyway, the ./ can simply be stripped.
+    href = href.match(/[./]+(.*)/)[1]
+  }
+  return `/${href}`
+}

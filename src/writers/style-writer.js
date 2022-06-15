@@ -2,7 +2,7 @@ import CleanCSS from 'clean-css'
 import fetch from 'node-fetch'
 import path from 'path'
 import { fs, mkdirp } from '../libs'
-import { encapsulateCSS } from '../utils'
+import { encapsulateCSS, absoluteHref } from '../utils'
 import Writer from './writer'
 
 import {
@@ -118,9 +118,7 @@ class StyleWriter extends Writer {
 
     if (href) {
       type = 'href'
-      body = /^\w+:\/\//.test(href) ? href
-        : href.startsWith('/') ? href
-        : `/${href}`
+      body = absoluteHref(href)
     }
     else {
       type = 'sheet'

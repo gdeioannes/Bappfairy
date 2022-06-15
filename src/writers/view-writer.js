@@ -16,6 +16,7 @@ import {
   Internal,
   splitWords,
   upperFirst,
+  absoluteHref,
 } from '../utils'
 
 const _ = Symbol('_ViewWriter')
@@ -228,7 +229,7 @@ class ViewWriter extends Writer {
       if (src) {
         this[_].scripts.push({
           type: 'src',
-          body: src,
+          body: absoluteHref(src),
           isAsync,
         })
       }
@@ -373,9 +374,7 @@ class ViewWriter extends Writer {
 
     if (href) {
       type = 'href'
-      body = /^\w+:\/\//.test(href) ? href
-        : href.startsWith('/') ? href
-        : `/${href}`
+      body = absoluteHref(href)
     }
     else {
       type = 'sheet'

@@ -1,5 +1,4 @@
 import fetch from 'node-fetch'
-import path from 'path'
 import uglify from 'uglify-js'
 import patches from '../patches'
 import { fs, mkdirp } from '../libs'
@@ -13,6 +12,7 @@ import {
   freeContext,
   padLeft,
   requireText,
+  absoluteHref,
 } from '../utils'
 
 const _ = Symbol('_ScriptWriter')
@@ -117,7 +117,7 @@ class ScriptWriter extends Writer {
 
     if (src) {
       type = 'src'
-      body = /^\w+:\/\//.test(src) ? src : path.resolve('/', src)
+      body = absoluteHref(src)
     }
     else {
       type = 'code'
