@@ -470,7 +470,7 @@ class ViewWriter extends Writer {
 
     let css = ''
 
-    if (this[_].importStyles) {
+    if (this.importStyles) {
       css += hrefs.map((href) => {
         return `@import url(${href});`
       }).join('\n')
