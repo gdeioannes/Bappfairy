@@ -1,7 +1,8 @@
 import CleanCSS from 'clean-css'
 import fetch from 'node-fetch'
 import path from 'path'
-import { fs, mkdirp } from '../libs'
+import { promises as fs } from 'fs'
+import { mkdirp } from 'fs-extra'
 import { encapsulateCSS, absoluteHref } from '../utils'
 import Writer from './writer'
 

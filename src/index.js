@@ -1,7 +1,9 @@
 import cheerio from 'cheerio'
 import path from 'path'
 import git from './git'
-import { fs, ncp, reread } from './libs'
+import { promises as fs } from 'fs'
+import { copy as ncp } from 'fs-extra'
+import reread from 'recursive-readdir'
 import { encapsulateCSS } from './utils'
 import { ViewWriter, ScriptWriter, StyleWriter } from './writers'
 

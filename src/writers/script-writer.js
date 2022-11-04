@@ -1,7 +1,8 @@
 import fetch from 'node-fetch'
 import uglify from 'uglify-js'
 import patches from '../patches'
-import { fs, mkdirp } from '../libs'
+import { promises as fs } from 'fs'
+import { mkdirp } from 'fs-extra'
 import Writer from './writer'
 
 import {
