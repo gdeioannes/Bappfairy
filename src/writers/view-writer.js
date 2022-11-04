@@ -340,7 +340,6 @@ class ViewWriter extends Writer {
     this.html = options.html
     this.source = options.source
     this.folder = options.folder
-    this.importStyles = options.importStyles
   }
 
   removeDupChildren(dups) {
@@ -470,11 +469,9 @@ class ViewWriter extends Writer {
 
     let css = ''
 
-    if (this.importStyles) {
-      css += hrefs.map((href) => {
-        return `@import url(${href});`
-      }).join('\n')
-    }
+    css += hrefs.map((href) => {
+      return `@import url(${href});`
+    }).join('\n')
 
     css += '\n\n'
 
