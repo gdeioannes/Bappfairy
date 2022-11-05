@@ -160,6 +160,7 @@ if (typeof config.output == 'string') {
   config.output = {
     public: `${config.output}/public`,
     src: `${config.output}/src`,
+    migration: `${config.output}/.af_migration.json`,
   }
 }
 if (typeof config.output != 'object') {
@@ -194,6 +195,9 @@ if (typeof config.output.src.views != 'string') {
 if (typeof config.output.src.controllers != 'string') {
   throw TypeError('config.output.src.controllers must be a string')
 }
+if (typeof config.output.migration != 'string') {
+  throw TypeError('config.output.migration must be a string')
+}
 if (typeof config.source != 'string') {
   throw TypeError('config.source must be a string')
 }
@@ -206,7 +210,8 @@ config.output = {
     styles: path.resolve(config.__dirname, config.output.src.styles),
     views: path.resolve(config.__dirname, config.output.src.views),
     controllers: path.resolve(config.__dirname, config.output.src.controllers),
-  }
+  },
+  migration: path.resolve(config.__dirname, config.output.migration),
 }
 
 transpile(config).catch((errs) => {

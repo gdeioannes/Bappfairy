@@ -1,6 +1,5 @@
 import execa from 'execa'
 import path from 'path'
-import { promises as fs } from 'fs'
 
 // Will add given files and will ignore those who aren't exist
 export const add = async (files) => {
@@ -45,13 +44,13 @@ export const add = async (files) => {
   return files
 }
 
-// Will commit changes, and if files not exist, will print status
-export const commit = (files, message, stdio = 'inherit') => {
-  if (files && files.length) try {
+// Will commit changes
+export const commit = (message, stdio = 'inherit') => {
+  try {
     return execa('git', [
       'commit',
       '-m',
-      `appfairy: ${message}`,
+      message,
     ], {
       stdio,
     })
@@ -60,6 +59,10 @@ export const commit = (files, message, stdio = 'inherit') => {
     // Probably no changes were made
   }
 
+  return status(stdio)
+}
+
+export const status = (stdio = 'inherit') => {
   return execa('git', [
     'status',
   ], {
@@ -67,65 +70,8 @@ export const commit = (files, message, stdio = 'inherit') => {
   })
 }
 
-export const removeAppfairyFiles = async () => {
-  const { stdout: diffFiles } = await execa('git', [
-    'diff',
-    '-z',
-    '--name-only',
-    '--',
-    '.',
-  ])
-
-  if (diffFiles) {
-    throw Error([
-      'Cannot transpile: Your index contains uncommitted changes.',
-      'Please commit or stash them.',
-    ].join('\n'))
-  }
-
-  let { stderr, stdout: hash } = await execa('git', [
-    'log',
-    '-1',
-    '--format=%H',
-    '--grep=appfairy: Migrate',
-    '--',
-    '.',
-  ])
-
-  // Probably git is not initialized
-  if (stderr) throw Error(stderr)
-  // No previous migrations found
-  if (!hash) return []
-
-  // List all files but deleted ones
-  let { stdout: files } = await execa('git', [
-    'diff',
-    '-z',
-    '--name-only',
-    '--diff-filter=ACMRTUXB',
-    `${hash}~1`,
-    hash,
-    '--',
-    '.',
-  ])
-  files = files.split('\0').filter(Boolean)
-
-  const { stdout: root } = await execa('git', [
-    'rev-parse',
-    '--show-toplevel',
-  ])
-
-  files = files.map((file) => path.resolve(root, file))
-
-  await Promise.all(files.map(async (file) => {
-    return fs.unlink(file)
-  }))
-
-  return files
-}
-
 export default {
   add,
   commit,
-  removeAppfairyFiles,
+  status,
 }
