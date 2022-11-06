@@ -1,9 +1,10 @@
 Changes made in this fork:
 
+- Takes a zip file as input (no need to unzip manually)
+- Doesn't use git to find migration files
 - Support for page folders (namespaces for pages)
 - Support for multiple sockets with the same name (single proxy referring to multiple elements in the view)
 - Support for multiple child views with the same name (only first one is used)
-- Option to disable styles imports (if adding them by hand to React's index.html)
 - No encapsulation of normalize.css (it changes specificity of selectors and they need to stay low)
 - Bugfixes
 
@@ -94,9 +95,9 @@ For an in-depth explanation regards Appfairy be sure to check-out the following:
 
 Appfairy is a CLI tool that can be installed using NPM:
 
-    $ npm install appfairy -g
+    $ npm install @awahlig/appfairy -g
 
-After exporting your Webflow project into a zip file, simply unzip it into a directory called `.appfairy` in the root of your project and run `$ appfairy`. Be sure to stash all your git changes as beforehand as Appfairy uses git as a version control. After doing so you'll notice that a new git-commit has been created saying `appfairy: Migrate`. This commit include all the changes that Appfairy has made, and shouldn't be edited or reworded.
+After exporting your Webflow project into a zip file, simply place it in the root of your project as `webflow.zip` and run `$ appfairy`. After doing so you'll notice that new files have been created in your project and that they have been automatically staged for a git commit. At this point feel free to commit those changes.
 
 The commit consists of the following files (regardless if they were added, modified or deleted):
 
@@ -141,6 +142,8 @@ Alternatively, you may provide (extra) options through the command line like the
     $ appfairy [...options]
 
 The CLI tool supports the following options:
+
+- **--clean**
 
 - **--prefetch**
 
