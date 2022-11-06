@@ -42,11 +42,10 @@ if (help) {
 usage: appfairy [--version] [--help] [--in | --input <path>] [--out | --output <path>]
                 [--src | --source <name>] [--cfg | --config <path>] [--clean] [--prefetch]
 
-After exporting your Webflow project into a zip file, simply unzip it into a directory called \`.appfairy\`
-in the root of your project and run \`$ appfairy\`. Be sure to stash all your git changes as beforehand as
-Appfairy uses git as a version control. After doing so you'll notice that a new git-commit has been created
-saying \`appfairy: Migrate\`. This commit include all the changes that Appfairy has made, and shouldn't be
-edited or reworded.
+After exporting your Webflow project into a zip file, simply place it in the root of your project as
+\`webflow.zip\` and run \`$ appfairy\`. After doing so you'll notice that new files have been created
+in your project and that they have been automatically staged for a git commit. At this point feel free
+to commit those changes.
 
 The commit consists of the following files (regardless if they were added, modified or deleted):
 
