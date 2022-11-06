@@ -14,12 +14,13 @@ let {
   output,
   source,
   config,
+  clean,
   prefetch,
   help,
   version,
 } = minimist(process.argv.slice(2), {
   string: ['output', 'input', 'source', 'config'],
-  boolean: ['prefetch', 'help'],
+  boolean: ['clean', 'prefetch', 'help'],
   alias: {
     in: 'input',
     out: 'output',
@@ -27,6 +28,7 @@ let {
     cfg: 'config',
   },
   default: {
+    clean: false,
     prefetch: false,
     help: false,
     input: `${root}/webflow.zip`,
@@ -38,7 +40,7 @@ let {
 if (help) {
   console.log(`
 usage: appfairy [--version] [--help] [--in | --input <path>] [--out | --output <path>]
-                [--src | --source <name>] [--cfg | --config <path>] [--prefetch]
+                [--src | --source <name>] [--cfg | --config <path>] [--clean] [--prefetch]
 
 After exporting your Webflow project into a zip file, simply unzip it into a directory called \`.appfairy\`
 in the root of your project and run \`$ appfairy\`. Be sure to stash all your git changes as beforehand as
@@ -98,6 +100,8 @@ Alternatively, you may provide (extra) options through the command line like the
 
 The CLI tool supports the following options:
 
+- **--clean**
+
 - **--prefetch**
 
 - **--source/--src**
@@ -148,6 +152,8 @@ if (config) {
 else {
   config = configBase
 }
+
+config.clean = clean
 
 // Validate config.output schema
 if (typeof config.prefetch != 'boolean') {

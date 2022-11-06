@@ -47,6 +47,13 @@ export const transpile = async (config) => {
     deletedFiles = []
   })
 
+  // Stop here in "clean" mode
+  if (config.clean) {
+    await git.add(deletedFiles)
+    await git.status()
+    return
+  }
+
   // Process the input zip file
   await anzip(config.input, {
     disableOutput: true, // not using the return value
