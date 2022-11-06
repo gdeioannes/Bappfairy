@@ -123,7 +123,7 @@ The output can be controlled using a config file named `af_config.js` which shou
 
 - **source (source)** - Can either be set to `webflow`, `sketch` and represents the studio name that generated the basic CSS and HTML assets. If not set there will be little to no difference in the transpilation process but it will however make the CSS encapsulation more accurate. Examples for Webflow and Sketch apps can be found [here](https://github.com/DAB0mB/Appfairy/tree/master/examples).
 
-- **input (string)** - The input dir for the Webflow exported files. Defaults to `.appfairy` dir in the root of the project.
+- **input (string)** - The input zip file for the Webflow export. Defaults to `webflow.zip` in the root of the project.
 
 - **output (string/object)** - If a string was provided, the output will be mapped to the specified dir. If an object, each key in the object will map its asset type to the specified dir in the value. The object has the following schema:
 
