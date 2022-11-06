@@ -88,7 +88,7 @@ class ScriptWriter extends Writer {
         ? await fetch(script.body)
           .then(res => res.text())
           .then(text => uglify.minify(text).code)
-        : requireText(`${this.baseUrl}/${script.body}`)
+        : await requireText.fromZip(this.baseUrl, script.body)
       code = code.replace(/\n\/\/# ?sourceMappingURL=.*\s*$/, '')
       code = freeContext(code)
 

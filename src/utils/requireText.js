@@ -1,5 +1,6 @@
 import { readFile, readFileSync } from 'fs'
 import resolvePath from 'resolve'
+import anzip from 'anzip'
 
 const cache = {}
 
@@ -32,5 +33,26 @@ requireText.promise = (path) => new Promise((resolve, reject) => {
     })
   })
 })
+
+requireText.fromZip = async (zipFile, path) => {
+  const key = `${zipFile}/${path}`
+  let content = cache[key]
+  if (content) {
+    return content;
+  }
+
+  const output = await anzip(zipFile, {
+    pattern: new RegExp(RegExp.escape(path)),
+    outputContent: true,
+  })
+
+  const entry = output.files[0]
+  if (entry) {
+    content = entry.content.toString()
+    cache[key] = content
+  }
+
+  return content
+}
 
 export default requireText

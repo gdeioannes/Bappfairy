@@ -29,7 +29,7 @@ let {
   default: {
     prefetch: false,
     help: false,
-    input: `${root}/.appfairy`,
+    input: `${root}/webflow.zip`,
     output: root,
     source: '',
   },
@@ -74,7 +74,7 @@ the root of the project. The config file may (or may not) include some of the fo
   generated the basic CSS and HTML assets. If not set there will be little to no difference in the
   transpilation process but it will however make the CSS encapsulation more accurate.
 
-- **input (string)** - The input dir for the Webflow exported files. Defaults to \`.appfairy\` dir in the
+- **input (string)** - The input zip file exported from Webflow. Defaults to \`webflow.zip\` in the
   root of the project.
 
 - **output (string/object)** - If a string was provided, the output will be mapped to the specified dir.

@@ -91,7 +91,7 @@ class StyleWriter extends Writer {
         ? style.body
         : /^http/.test(style.body)
         ? await fetch(style.body).then(res => res.text())
-        : await requireText.promise(`${this.baseUrl}/${style.body}`)
+        : await requireText.fromZip(this.baseUrl, style.body)
 
       return fs.writeFile(`${dir}/${styleFileName}`, this[_].transformSheet(sheet))
     })
