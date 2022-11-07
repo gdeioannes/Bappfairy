@@ -141,7 +141,7 @@ const configBase = {
   source,
   prefetch,
   // Preserve original path
-  __dirname: path.dirname(config || root),
+  __dirname: config ? path.dirname(config) : process.cwd(),
 }
 
 if (config) {
