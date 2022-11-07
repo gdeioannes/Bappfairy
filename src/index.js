@@ -151,7 +151,8 @@ export const transpile = async (config) => {
   // This will be read by the next migration to identify old files.
   await writeJson(config.output.migration, {
     generatedFiles: outputFiles
-      .map((f) => path.relative(path.dirname(config.output.migration), f))
+      .map((file) => path.relative(path.dirname(config.output.migration),
+                                   file).replace(/\\/g, '/'))
       .sort(),
   }, { spaces: 2 })
   outputFiles.push(config.output.migration)
