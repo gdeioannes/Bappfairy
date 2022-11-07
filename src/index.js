@@ -4,7 +4,7 @@ import git from './git'
 import { promises as fs } from 'fs'
 import { mkdirp } from 'fs-extra'
 import { readJson, writeJson } from 'fs-extra'
-import { encapsulateCSS } from './utils'
+import { encapsulateCSS, version } from './utils'
 import { ViewWriter, ScriptWriter, StyleWriter } from './writers'
 import anzip from 'anzip'
 
@@ -150,6 +150,7 @@ export const transpile = async (config) => {
   // Write the migration state file with the list of generated files.
   // This will be read by the next migration to identify old files.
   await writeJson(config.output.migration, {
+    version,
     generatedFiles: outputFiles
       .map((file) => path.relative(path.dirname(config.output.migration),
                                    file).replace(/\\/g, '/'))
