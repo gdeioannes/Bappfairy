@@ -268,16 +268,24 @@ class ViewWriter extends Writer {
 
     this[_].html = html
 
-    const sockets = this[_].sockets = []
+    const sockets = this[_].sockets = {}
 
-    // Find root sockets
+    // Build the socket tree
+    $('[af-sock]').each((_, el) => {
+      const $el = $(el)
+      const socketName = $el.attr('af-sock')
+
+      const group = $el.parents('[af-sock]').toArray().reverse()
+        .reduce((acc, el) => acc[$(el).attr('af-sock')].sockets, sockets)
+      group[socketName] = { type: $el[0].name, sockets: {} }
+    })
+
+    // Workaround to help identify the closing tag
     $('[af-sock]').each((i, el) => {
       const $el = $(el)
       const socketName = $el.attr('af-sock')
-      sockets.push(socketName)
 
       $el.attr('af-sock', null)
-      // Workaround would help identify the closing tag
       el.tagName += `-af-sock-${i}-${socketName}`
     })
 
@@ -444,6 +452,9 @@ class ViewWriter extends Writer {
         }
 
         render() {
+          /* All proxies defined by this view:
+             ==>${this[_].composeProxiesHint()}<==
+          */
           const proxies = transformProxies(this.props.children)
 
           return (
@@ -490,6 +501,23 @@ class ViewWriter extends Writer {
         ==>${imports}<==
       \` }} />
     `)
+  }
+
+  _composeProxiesHint() {
+    const print = (sockets) =>
+      Object.entries(sockets).map(([socketName, props]) => {
+        if (Object.keys(props.sockets).length === 0) {
+          return `<${props.type} af-sock="${socketName}" />`
+        } else {
+          const text = freeText(`
+            <${props.type} af-sock="${socketName}">
+              ==>${print(props.sockets)}<==
+            </${props.type}>
+          `)
+          return `\n${text}\n`
+        }
+      }).join('\n')
+    return print(this[_].sockets)
   }
 
   _composeChildImports() {
