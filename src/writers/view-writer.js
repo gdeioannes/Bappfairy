@@ -418,6 +418,8 @@ class ViewWriter extends Writer {
       import React from 'react'
       import { createScope, map, transformProxies } from '${helpersPath}'
       ==>${this[_].composeChildImports()}<==
+      ==>${this[_].composeSocks()}<==
+
       const scripts = [
         ==>${this[_].composeScriptsDeclerations()}<==
       ]
@@ -452,9 +454,6 @@ class ViewWriter extends Writer {
         }
 
         render() {
-          /* All proxies defined by this view:
-             ==>${this[_].composeProxiesHint()}<==
-          */
           const proxies = transformProxies(this.props.children)
 
           return (
@@ -503,21 +502,55 @@ class ViewWriter extends Writer {
     `)
   }
 
-  _composeProxiesHint() {
-    const print = (sockets) =>
+  _composeSocks() {
+    const toIdent = (s) => s.replace(/-/g, '_').replace(/[^ _0-9a-z]/gi, '')
+
+    const sock = {}
+    const collectSocks = (sockets) =>
+      Object.entries(sockets).forEach(([name, props]) => {
+        const ident = toIdent(name)
+        if (!sock.hasOwnProperty(ident)) {
+          sock[ident] = name
+        } else if (sock[ident] !== name) {
+          // Example: "some-socket" and "some_socket"
+          console.warn('warning, sock enum conflict in', this.name,
+            'view between', sock[ident], 'and', name)
+        }
+        collectSocks(props.sockets)
+      })
+    collectSocks(this[_].sockets)
+    const sockText = Object.entries(sock).map(([ident, name]) =>
+      `${ident}: "${name}",`).join('\n')
+
+    const printHints = (sockets) =>
       Object.entries(sockets).map(([socketName, props]) => {
+        const ident = toIdent(socketName)
+        // Make sure the sock enum resolves to the same socket
+        const af_sock = (sock[ident] === socketName) ?
+          `{sock.${ident}}` : `"${socketName}"`
         if (Object.keys(props.sockets).length === 0) {
-          return `<${props.type} af-sock="${socketName}" />`
+          return `<${props.type} af-sock=${af_sock} />`
         } else {
           const text = freeText(`
-            <${props.type} af-sock="${socketName}">
-              ==>${print(props.sockets)}<==
+            <${props.type} af-sock=${af_sock}>
+              ==>${printHints(props.sockets)}<==
             </${props.type}>
           `)
           return `\n${text}\n`
         }
       }).join('\n')
-    return print(this[_].sockets)
+    const hints = printHints(this[_].sockets).replace(/\n\n/g, '\n')
+
+    return freeText(`
+      /*
+        All proxies defined by this view:
+
+        ==>${hints}<==
+      */
+      export const sock = Object.freeze({
+        ==>${sockText}<==
+      })
+    `)
   }
 
   _composeChildImports() {
