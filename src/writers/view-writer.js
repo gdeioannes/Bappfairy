@@ -539,14 +539,17 @@ class ViewWriter extends Writer {
           return `\n${text}\n`
         }
       }).join('\n')
-    const hints = printHints(this[_].sockets).replace(/\n\n/g, '\n')
+    const hints = freeText(`
+      All proxies defined by this view:
+
+      ==>${printHints(this[_].sockets)}<==
+    `).replace(/\n\n\n/g, '\n\n')
 
     return freeText(`
       /*
-        All proxies defined by this view:
-
         ==>${hints}<==
       */
+
       export const sock = Object.freeze({
         ==>${sockText}<==
       })
