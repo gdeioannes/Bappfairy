@@ -1,8 +1,8 @@
 /* eslint-disable */
 
-const React = require('react')
+import React from 'react'
 
-exports.transformProxies = (children = []) => {
+const transformProxies = (children = []) => {
   children = [].concat(children).filter(Boolean)
 
   const proxies = {}
@@ -35,17 +35,24 @@ exports.transformProxies = (children = []) => {
   return proxies
 }
 
-exports.createScope = (children, callback) => {
-  const proxies = exports.transformProxies(children)
+export const createScope = (children, callback) => {
+  const proxies = transformProxies(children)
 
-  return callback(proxies)
-}
+  return callback((name, repeat, callback) => {
+    const props = proxies[name]
+  
+    if (props == null) {
+      // no proxy - use default unless repeat is "?" or "*"
+      if (/^[?*]$/.test(repeat)) return null
+      return callback({})
+    }
 
-exports.map = (props, callback) => {
-  if (props == null) return null
-  if (!(props instanceof Array)) return callback(props)
+    if (!(props instanceof Array)) return callback(props)
+    // 2 or more proxies - error unless repeat is "+" or "*"
+    if (/^[+*]$/.test(repeat)) return props.map(callback)
 
-  return props.map(callback)
+    throw new Error(`too many (${props.length}) '${name}' proxies`)
+  })
 }
 
 /* eslint-enable */

@@ -1,5 +1,6 @@
 import cheerio from 'cheerio'
 import HTMLtoJSX from 'htmltojsx'
+import base32 from 'base32'
 import path from 'path'
 import statuses from 'statuses'
 import uglify from 'uglify-js'
@@ -203,9 +204,11 @@ class ViewWriter extends Writer {
       const elName = $el.attr('af-el')
       const $afEl = $(`<af-${elName}></af-${elName}>`)
 
-      $afEl.attr('af-sock', $el.attr('af-sock'))
+      for (const name of ['af-sock', 'af-repeat']) {
+        $afEl.attr(name, $el.attr(name))
+        $el.attr(name, null)
+      }
       $el.attr('af-el', null)
-      $el.attr('af-sock', null)
       $afEl.insertAfter($el)
       $el.remove()
 
@@ -273,20 +276,33 @@ class ViewWriter extends Writer {
     // Build the socket tree
     $('[af-sock]').each((_, el) => {
       const $el = $(el)
-      const socketName = $el.attr('af-sock')
+      const sock = $el.attr('af-sock')
 
       const group = $el.parents('[af-sock]').toArray().reverse()
         .reduce((acc, el) => acc[$(el).attr('af-sock')].sockets, sockets)
-      group[socketName] = { type: $el[0].name, sockets: {} }
+      group[sock] = {
+        type: $el[0].name,
+        repeat: ($el.attr('af-repeat') || '').trim(),
+        sockets: {},
+      }
     })
 
-    // Workaround to help identify the closing tag
+    // Encode socket data into the tag name
     $('[af-sock]').each((i, el) => {
       const $el = $(el)
-      const socketName = $el.attr('af-sock')
+      const sock = $el.attr('af-sock')
+
+      const repeat = ($el.attr('af-repeat') || '').trim()
+      if (!/^[?*+]?$/.test(repeat)) {
+        throw `invalid repeat '${repeat}' for socket '${sock}' in '${this.name}' view`
+      }
 
       $el.attr('af-sock', null)
-      el.tagName += `-af-sock-${i}-${socketName}`
+      $el.attr('af-repeat', null)
+
+      const data = { sock, repeat }
+      const encoded = base32.encode(JSON.stringify(data))
+      el.tagName += `-af-sock-${i}-${encoded}`
     })
 
     // Refetch modified html
@@ -416,7 +432,7 @@ class ViewWriter extends Writer {
     )
     return freeLint(`
       import React from 'react'
-      import { createScope, map, transformProxies } from '${helpersPath}'
+      import { createScope } from '${helpersPath}'
       ==>${this[_].composeChildImports()}<==
       ==>${this[_].composeSocks()}<==
 
@@ -454,14 +470,12 @@ class ViewWriter extends Writer {
         }
 
         render() {
-          const proxies = transformProxies(this.props.children)
-
-          return (
+          return createScope(this.props.children, proxy => (
             <span>
               ==>${this[_].composeStyleImports()}<==
               ==>${this.jsx}<==
             </span>
-          )
+          ))
         }
       }
 
@@ -503,51 +517,46 @@ class ViewWriter extends Writer {
   }
 
   _composeSocks() {
-    const toIdent = (s) => s.replace(/-/g, '_').replace(/[^ _0-9a-z]/gi, '')
-
     const sock = {}
-    const collectSocks = (sockets) =>
-      Object.entries(sockets).forEach(([name, props]) => {
-        const ident = toIdent(name)
-        if (!sock.hasOwnProperty(ident)) {
-          sock[ident] = name
-        } else if (sock[ident] !== name) {
-          // Example: "some-socket" and "some_socket"
-          console.warn('warning, sock enum conflict in', this.name,
-            'view between', sock[ident], 'and', name)
+    const collectHints = (sockets) =>
+      Object.entries(sockets).map(([socketName, props]) => {
+        let ident = socketName.replace(/[^_0-9a-z]/gi, '_')
+        if (/^\d/.test(ident)) {
+          ident = `_${ident}`
         }
-        collectSocks(props.sockets)
-      })
-    collectSocks(this[_].sockets)
+        for (let i = 0;; i++) {
+          const name = i > 0 ? `${ident}${i}` : ident
+          // If not set yet or resolves to the same value
+          if (!sock.hasOwnProperty(name) || sock[name] === socketName) {
+            ident = name
+            break
+          }
+        }
+        sock[ident] = socketName
+        const comment = props.repeat ? `  // repeat='${props.repeat}'` : ''
+        if (Object.keys(props.sockets).length === 0) {
+          return `<${props.type} af-sock={sock.${ident}} />${comment}`
+        }
+        const text = freeText(`
+          <${props.type} af-sock={sock.${ident}}>${comment}
+            ==>${collectHints(props.sockets)}<==
+          </${props.type}>
+        `)
+        return `\n${text}\n`
+      }).join('\n')
+
+    const hintText = freeText(`
+      All proxies defined by this view:
+
+      ==>${collectHints(this[_].sockets)}<==
+    `).replace(/\n\n\n/g, '\n\n')
+
     const sockText = Object.entries(sock).map(([ident, name]) =>
       `${ident}: "${name}",`).join('\n')
 
-    const printHints = (sockets) =>
-      Object.entries(sockets).map(([socketName, props]) => {
-        const ident = toIdent(socketName)
-        // Make sure the sock enum resolves to the same socket
-        const af_sock = (sock[ident] === socketName) ?
-          `{sock.${ident}}` : `"${socketName}"`
-        if (Object.keys(props.sockets).length === 0) {
-          return `<${props.type} af-sock=${af_sock} />`
-        } else {
-          const text = freeText(`
-            <${props.type} af-sock=${af_sock}>
-              ==>${printHints(props.sockets)}<==
-            </${props.type}>
-          `)
-          return `\n${text}\n`
-        }
-      }).join('\n')
-    const hints = freeText(`
-      All proxies defined by this view:
-
-      ==>${printHints(this[_].sockets)}<==
-    `).replace(/\n\n\n/g, '\n\n')
-
     return freeText(`
       /*
-        ==>${hints}<==
+        ==>${hintText}<==
       */
 
       export const sock = Object.freeze({
@@ -629,23 +638,25 @@ function bindJSX(jsx, children = []) {
   return jsx
     // Open close
     .replace(
-      /<([\w._-]+)-af-sock-(\d+)-([\w_-]+)(.*?)>([^]*)<\/\1-af-sock-\2-\3>/g, (
-      match, el, index, sock, attrs, children
-    ) => (
+      /<([\w._-]+)-af-sock-(\d+)-(\w+)(.*?)>([^]*)<\/\1-af-sock-\2-\3>/g, (
+      match, el, _index, encoded, attrs, children
+    ) => {
+      const { sock, repeat } = JSON.parse(base32.decode(encoded))
       // If there are nested sockets
-      /<[\w._-]+-af-sock-\d+-[\w_-]+/.test(children) ? (
-        `{map(proxies['${sock}'], props => <${el} ${mergeProps(attrs)}>{createScope(props.children, proxies => <React.Fragment>${bindJSX(children)}</React.Fragment>)}</${el}>)}`
+      return /<[\w._-]+-af-sock-\d+-\w+/.test(children) ? (
+        `{proxy('${sock}', '${repeat}', props => <${el} ${mergeProps(attrs)}>{createScope(props.children, proxy => <React.Fragment>${bindJSX(children)}</React.Fragment>)}</${el}>)}`
       ) : (
-        `{map(proxies['${sock}'], props => <${el} ${mergeProps(attrs)}>{props.children ? props.children : <React.Fragment>${children}</React.Fragment>}</${el}>)}`
+        `{proxy('${sock}', '${repeat}', props => <${el} ${mergeProps(attrs)}>{props.children ? props.children : <React.Fragment>${children}</React.Fragment>}</${el}>)}`
       )
-    ))
+    })
     // Self closing
     .replace(
-      /<([\w._-]+)-af-sock-\d+-([\w_-]+)(.*?)\/>/g, (
-      match, el, sock, attrs
-    ) => (
-      `{map(proxies['${sock}'], props => <${el} ${mergeProps(attrs)}>{props.children}</${el}>)}`
-    ))
+      /<([\w._-]+)-af-sock-\d+-(\w+)(.*?)\/>/g, (
+      match, el, encoded, attrs
+    ) => {
+      const { sock, repeat } = JSON.parse(base32.decode(encoded))
+      return `{proxy('${sock}', '${repeat}', props => <${el} ${mergeProps(attrs)}>{props.children}</${el}>)}`
+    })
 }
 
 // Merge props along with class name
