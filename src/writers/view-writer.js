@@ -426,7 +426,7 @@ class ViewWriter extends Writer {
 
       let Controller
 
-      class ${this.className} extends React.Component {
+      export class ${this.className} extends React.Component {
         static get Controller() {
           if (Controller) return Controller
 
