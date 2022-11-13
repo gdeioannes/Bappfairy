@@ -9,6 +9,10 @@ const transformProxies = (children = []) => {
 
   React.Children.forEach(children, (child) => {
     const props = Object.assign({}, child.props)
+    Object.defineProperty(props, '_af_visit', {
+      value: false,
+      writable: true,
+    })
 
     const name = props['af-sock'] || child.type
     delete props['af-sock']
@@ -38,7 +42,7 @@ const transformProxies = (children = []) => {
 export const createScope = (children, callback) => {
   const proxies = transformProxies(children)
 
-  return callback((name, repeat, callback) => {
+  const result = callback((name, repeat, callback) => {
     const props = proxies[name]
   
     if (props == null) {
@@ -47,12 +51,29 @@ export const createScope = (children, callback) => {
       return callback({})
     }
 
-    if (!(props instanceof Array)) return callback(props)
+    const visit = (props) => {
+      // mark proxy as used
+      props._af_visit = true
+      return callback(props)
+    }
+
+    if (!(props instanceof Array)) return visit(props)
     // 2 or more proxies - error unless repeat is "+" or "*"
-    if (/^[+*]$/.test(repeat)) return props.map(callback)
+    if (/^[+*]$/.test(repeat)) return props.map(visit)
 
     throw new Error(`too many (${props.length}) '${name}' proxies`)
   })
+
+  // print warnings about unused proxies
+  Object.entries(proxies).forEach(([name, props]) => {
+    ((props instanceof Array) ? props : [props]).forEach((props) => {
+      if (!props._af_visit) {
+        console.warn(`Warning: proxy '${name}' defined but not used`)
+      }
+    })
+  })
+
+  return result
 }
 
 /* eslint-enable */
