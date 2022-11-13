@@ -548,7 +548,7 @@ class ViewWriter extends Writer {
       ==>${collectHints(this[_].sockets)}<==
     `).replace(/\n\n\n/g, '\n\n')
 
-    const sockText = Object.entries(sock).map(([ident, name]) =>
+    const sockText = Object.entries(sock).sort().map(([ident, name]) =>
       `${ident}: "${name}",`).join('\n')
 
     return freeText(`
