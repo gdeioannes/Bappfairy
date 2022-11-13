@@ -273,13 +273,21 @@ class ViewWriter extends Writer {
 
     const sockets = this[_].sockets = {}
 
+    const getSock = ($el) => {
+      const sock = $el.attr('af-sock').trim()
+      if (!/^[a-z_-][0-9a-z_-]*$/.test(sock)) {
+        throw `invalid sock '${sock}' in '${this.name}' view`
+      }
+      return sock.replace(/_/g, '-')
+    }
+
     // Build the socket tree
     $('[af-sock]').each((_, el) => {
       const $el = $(el)
-      const sock = $el.attr('af-sock')
+      const sock = getSock($el)
 
       const group = $el.parents('[af-sock]').toArray().reverse()
-        .reduce((acc, el) => acc[$(el).attr('af-sock')].sockets, sockets)
+        .reduce((acc, el) => acc[getSock($(el))].sockets, sockets)
       group[sock] = {
         type: $el[0].name,
         repeat: ($el.attr('af-repeat') || '').trim(),
@@ -290,7 +298,7 @@ class ViewWriter extends Writer {
     // Encode socket data into the tag name
     $('[af-sock]').each((i, el) => {
       const $el = $(el)
-      const sock = $el.attr('af-sock')
+      const sock = getSock($el)
 
       const repeat = ($el.attr('af-repeat') || '').trim()
       if (!/^[?*+]?$/.test(repeat)) {
@@ -520,18 +528,7 @@ class ViewWriter extends Writer {
     const sock = {}
     const collectHints = (sockets) =>
       Object.entries(sockets).map(([socketName, props]) => {
-        let ident = socketName.replace(/[^_0-9a-z]/gi, '_')
-        if (/^\d/.test(ident)) {
-          ident = `_${ident}`
-        }
-        for (let i = 0;; i++) {
-          const name = i > 0 ? `${ident}${i}` : ident
-          // If not set yet or resolves to the same value
-          if (!sock.hasOwnProperty(name) || sock[name] === socketName) {
-            ident = name
-            break
-          }
-        }
+        const ident = socketName.replace(/-/g, '_')
         sock[ident] = socketName
         const comment = props.repeat ? `  // repeat='${props.repeat}'` : ''
         if (Object.keys(props.sockets).length === 0) {
