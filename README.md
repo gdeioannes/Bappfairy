@@ -1,8 +1,9 @@
 Changes made in this fork:
 
-- Takes a zip file as input (no need to unzip manually)
-- Doesn't use git to find migration files
-- Support for page folders (namespaces for pages)
+- Takes a zip file as input (no need to unzip manually) ([more](https://github.com/awahlig/Appfairy/commit/41fc3589414ac8ff446451cc03c7f051b4d4d8b8))
+- Doesn't use git to find migration files ([more](https://github.com/awahlig/Appfairy/commit/7b1b52c3f6ab4cdc9e7ec492a61f4a57394039b9))
+- Support for the `af-repeat` attribute ([more](https://github.com/awahlig/Appfairy/commit/010b0409fe644c23889256c18cde1127818f2f1e))
+- Support for page folders (namespaces for pages) ([more](https://github.com/awahlig/Appfairy/commit/56bfc9ba12d69506fff33c954e35d0bd0fe7805c))
 - Support for multiple sockets with the same name (single proxy referring to multiple elements in the view)
 - Support for multiple child views with the same name (only first one is used)
 - No encapsulation of normalize.css (it changes specificity of selectors and they need to stay low)
