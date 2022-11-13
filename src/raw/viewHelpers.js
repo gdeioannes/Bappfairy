@@ -14,7 +14,7 @@ const transformProxies = (children = []) => {
       writable: true,
     })
 
-    const name = (props['af-sock'] || child.type).replace(/_/g, '-')
+    const name = (props['af-sock'] || child.type).trim().replace(/_/g, '-')
     delete props['af-sock']
 
     if (!proxies[name]) {
