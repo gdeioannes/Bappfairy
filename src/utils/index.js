@@ -116,20 +116,6 @@ export const freeContext = (script) => {
   `)
 }
 
-// Creates a completely isolated scope with Function constructor.
-// args is a varToInject-injectedVarName map.
-export const freeScope = (script, context = 'window', args = {}) => {
-  const callArgs = [context].concat(Object.keys(args))
-
-  return freeText(`
-    new Function(\`
-      with (this) {
-        ${script}
-      }
-    \`).call(${callArgs.join(', ')})
-  `)
-}
-
 // upper -> Upper
 export const upperFirst = (str) => {
   return str.substr(0, 1).toUpperCase() + str.substr(1)

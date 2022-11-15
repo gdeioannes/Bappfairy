@@ -13,7 +13,6 @@ import {
   encapsulateCSS,
   escape,
   freeLint,
-  freeScope,
   freeText,
   Internal,
   splitWords,
@@ -440,13 +439,14 @@ class ViewWriter extends Writer {
     )
     return freeLint(`
       import React from 'react'
-      import { createScope } from '${helpersPath}'
+      import { createScope, prefetch, loadScripts } from '${helpersPath}'
       ==>${this[_].composeChildImports()}<==
       ==>${this[_].composeSocks()}<==
 
       const scripts = [
         ==>${this[_].composeScriptsDeclerations()}<==
       ]
+      scripts.forEach(prefetch)
 
       let Controller
 
@@ -474,7 +474,7 @@ class ViewWriter extends Writer {
         componentDidMount() {
           ==>${this[_].composeWfDataAttrs()}<==
 
-          ==>${this[_].composeScriptsInvocations()}<==
+          loadScripts(scripts)
         }
 
         render() {
@@ -573,14 +573,14 @@ class ViewWriter extends Writer {
   _composeScriptsDeclerations() {
     return this[_].scripts.map((script) => {
       if (script.type == 'src') {
-        return `{ loading: fetch("${script.body}").then(body => body.text()), isAsync: ${!!script.isAsync} },`
+        return `{ src: "${script.body}", isAsync: ${!!script.isAsync} },`
       }
 
       const minified = uglify.minify(script.body).code
       // Unknown script format ??? fallback to maxified version
       const code = minified || script.body
 
-      return `{ loading: Promise.resolve("${escape(code)}"), isAsync: ${!!script.isAsync} },`
+      return `{ body: "${escape(code)}", isAsync: ${!!script.isAsync} },`
     }).join('\n')
   }
 
@@ -598,28 +598,6 @@ class ViewWriter extends Writer {
     }
 
     return lines.join('\n')
-  }
-
-  _composeScriptsInvocations() {
-    if (this[_].scripts.length == 0) {
-      return ''
-    }
-
-    const invoke = freeScope('eval(arguments[0])', 'window', {
-      'script': null,
-    })
-
-    return freeText(`
-      scripts.concat(null).reduce((active, next) => Promise.resolve(active).then((active) => {
-        const loading = active.loading.then((script) => {
-          ==>${invoke}<==
-
-          return next
-        })
-
-        return active.isAsync ? next : loading
-      }))
-    `)
   }
 }
 
