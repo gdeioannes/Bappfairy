@@ -9,18 +9,9 @@ const pack = require('./package.json')
 
 const root = findRoot(process.cwd())
 
-let {
-  input,
-  output,
-  source,
-  config,
-  clean,
-  prefetch,
-  help,
-  version,
-} = minimist(process.argv.slice(2), {
+const args = minimist(process.argv.slice(2), {
   string: ['output', 'input', 'source', 'config'],
-  boolean: ['clean', 'prefetch', 'help'],
+  boolean: ['clean', 'prefetch', 'encapsulate-css', 'help'],
   alias: {
     in: 'input',
     out: 'output',
@@ -30,17 +21,35 @@ let {
   default: {
     clean: false,
     prefetch: false,
+    'encapsulate-css': false,
     help: false,
     input: `${root}/webflow.zip`,
     output: root,
     source: '',
   },
+  unknown: (name) => {
+    console.error('unrecognized argument:', name)
+    process.exit(-1)
+  },
 })
+
+let {
+  input,
+  output,
+  source,
+  config,
+  clean,
+  prefetch,
+  help,
+  version,
+} = args
+let encapsulateCSS = args['encapsulate-css']
 
 if (help) {
   console.log(`
 usage: appfairy [--version] [--help] [--in | --input <path>] [--out | --output <path>]
-                [--src | --source <name>] [--cfg | --config <path>] [--clean] [--prefetch]
+                [--src | --source <name>] [--cfg | --config <path>] [--clean]
+                [--prefetch] [--encapsulate-css]
 
 After exporting your Webflow project into a zip file, simply place it in the root of your project as
 \`webflow.zip\` and run \`$ appfairy\`. After doing so you'll notice that new files have been created
@@ -70,6 +79,9 @@ the root of the project. The config file may (or may not) include some of the fo
 
 - **prefetch (boolean)** - Prefetch the styles and scripts which are necessary for the design to work.
   If not specified, the scripts and styles will be fetched during runtime.
+
+- **encapsulateCSS (boolean)** - Encapsulate all CSS in af-classes. If not specified, CSS will not be
+  encapsulated.
 
 - **source (source)** - Can either be set to \`webflow\`, \`sketch\` and represents the studio name that
   generated the basic CSS and HTML assets. If not set there will be little to no difference in the
@@ -102,6 +114,8 @@ The CLI tool supports the following options:
 - **--clean**
 
 - **--prefetch**
+
+- **--encapsulate-css**
 
 - **--source/--src**
 
@@ -140,6 +154,7 @@ const configBase = {
   output,
   source,
   prefetch,
+  encapsulateCSS,
   // Preserve original path
   __dirname: config ? path.dirname(config) : process.cwd(),
 }
@@ -157,6 +172,9 @@ config.clean = clean
 // Validate config.output schema
 if (typeof config.prefetch != 'boolean') {
   throw TypeError('config.prefetch must be a boolean')
+}
+if (typeof config.encapsulateCSS != 'boolean') {
+  throw TypeError('config.encapsulateCSS must be a boolean')
 }
 if (typeof config.input != 'string') {
   throw TypeError('config.input must be a string')

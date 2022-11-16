@@ -43,13 +43,15 @@ class ScriptWriter extends Writer {
   constructor(options = {}) {
     super()
 
-    this[_].scripts = [
-      {
+    const scripts = this[_].scripts = []
+
+    if (options.patchWebflow) {
+      scripts.push({
         type: 'code',
         body: patches.webflow,
         isAsync: false,
-      }
-    ]
+      })
+    }
 
     this.baseUrl = options.baseUrl
     this.prefetch = options.prefetch

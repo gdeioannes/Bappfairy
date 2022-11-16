@@ -84,6 +84,14 @@ class ViewWriter extends Writer {
     return (a < b) ? -1 : (a > b) ? 1 : 0
   }
 
+  get encapsulateCSS() {
+    return this[_].encapsulateCSS
+  }
+
+  set encapsulateCSS(encapsulateCSS) {
+    this[_].encapsulateCSS = !!encapsulateCSS
+  }
+
   get folder() {
     return this[_].folder
   }
@@ -150,19 +158,21 @@ class ViewWriter extends Writer {
     const $ = cheerio.load(html)
 
     // Encapsulate styles
-    $('style').each((i, el) => {
-      const $el = $(el)
-      const html = $el.html()
-      const css = encapsulateCSS(html, this.srouce)
-
-      $el.html(css)
-    })
+    if (this.encapsulateCSS) {
+      $('style').each((i, el) => {
+        const $el = $(el)
+        const html = $el.html()
+        const css = encapsulateCSS(html, this.srouce)
+  
+        $el.html(css)
+      })
+    }
 
     $('*').each((i, el) => {
       const $el = $(el)
       let className = $el.attr('class')
 
-      if (className && !/af-class-/.test(className)) {
+      if (this.encapsulateCSS && className && !/af-class-/.test(className)) {
         className = className.replace(/([\w_-]+)/g, 'af-class-$1')
 
         switch (this.source) {
@@ -372,6 +382,7 @@ class ViewWriter extends Writer {
     this.html = options.html
     this.source = options.source
     this.folder = options.folder
+    this.encapsulateCSS = options.encapsulateCSS
   }
 
   removeDupChildren(dups) {

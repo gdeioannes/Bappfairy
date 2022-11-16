@@ -6,7 +6,7 @@ Changes made in this fork:
 - Support for page folders (namespaces for pages) ([more](https://github.com/awahlig/Appfairy/commit/56bfc9ba12d69506fff33c954e35d0bd0fe7805c))
 - Support for multiple sockets with the same name (single proxy referring to multiple elements in the view)
 - Support for multiple child views with the same name (only first one is used)
-- No encapsulation of normalize.css (it changes specificity of selectors and they need to stay low)
+- Encapsulation of CSS disabled by default
 - Bugfixes
 
 This version is published in the `@awahlig` scope and can be installed using:
@@ -122,6 +122,8 @@ The output can be controlled using a config file named `af_config.js` which shou
 
 - **prefetch (boolean)** - Prefetch the styles and scripts which are necessary for the design to work. If not specified, the scripts and styles will be fetched during runtime. An example app with prefetching enabled can be found [here](https://github.com/DAB0mB/Appfairy/tree/master/examples/prefetch).
 
+- **encapsulateCSS (boolean)** - Encapsulate all CSS in af-classes. If not specified, CSS will not be encapsulated.
+
 - **source (source)** - Can either be set to `webflow`, `sketch` and represents the studio name that generated the basic CSS and HTML assets. If not set there will be little to no difference in the transpilation process but it will however make the CSS encapsulation more accurate. Examples for Webflow and Sketch apps can be found [here](https://github.com/DAB0mB/Appfairy/tree/master/examples).
 
 - **input (string)** - The input zip file exported from Webflow. Defaults to `webflow.zip` in the root of the project.
@@ -147,6 +149,8 @@ The CLI tool supports the following options:
 - **--clean**
 
 - **--prefetch**
+
+- **--encapsulate-css**
 
 - **--source/--src**
 

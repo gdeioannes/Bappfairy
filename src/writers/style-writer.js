@@ -26,6 +26,14 @@ class StyleWriter extends Writer {
     return this[_].styles.slice()
   }
 
+  get encapsulateCSS() {
+    return this[_].encapsulateCSS
+  }
+
+  set encapsulateCSS(encapsulateCSS) {
+    return this[_].encapsulateCSS = !!encapsulateCSS
+  }
+
   get prefetch() {
     return this[_].prefetch
   }
@@ -58,6 +66,7 @@ class StyleWriter extends Writer {
     this.baseUrl = options.baseUrl
     this.prefetch = options.prefetch
     this.source = options.srouce
+    this.encapsulateCSS = options.encapsulateCSS
   }
 
   async write(dir, options) {
@@ -151,6 +160,33 @@ class StyleWriter extends Writer {
       `)
     }).join('\n')
 
+    const exp = this.encapsulateCSS
+      ? freeText(`
+        export default Promise.all(loadingStyles).then(() => {
+          const styleSheets = Array.from(document.styleSheets).filter((styleSheet) => {
+            return styleSheet.href && styles.some((style) => {
+              return style.type == 'href' && styleSheet.href.match(style.body)
+            })
+          })
+          styleSheets.forEach((styleSheet) => {
+            Array.from(styleSheet.rules).forEach((rule) => {
+              if (rule.selectorText) {
+                rule.selectorText = rule.selectorText
+                  .replace(/\\.([\\w_-]+)/g, '.af-class-$1')
+                  .replace(/\\[class(.?)="( ?)([^"]+)( ?)"\\]/g, '[class$1="$2af-class-$3$4"]')
+                  .replace(/([^\\s][^,]*)(\\s*,?)/g, '.af-view $1$2')
+                  .replace(/\\.af-view html/g, '.af-view')
+                  .replace(/\\.af-view body/g, '.af-view')
+                  ==>${this[_].composeSourceReplacements()}<==
+              }
+            })
+          })
+        })
+      `)
+      : freeText(`
+        export default Promise.all(loadingStyles)
+      `)
+
     return freeLint(`
       const styles = [
         ==>${styles}<==
@@ -185,26 +221,7 @@ class StyleWriter extends Writer {
         return loading
       })
 
-      export default Promise.all(loadingStyles).then(() => {
-        const styleSheets = Array.from(document.styleSheets).filter((styleSheet) => {
-          return styleSheet.href && styles.some((style) => {
-            return style.type == 'href' && styleSheet.href.match(style.body)
-          })
-        })
-        styleSheets.forEach((styleSheet) => {
-          Array.from(styleSheet.rules).forEach((rule) => {
-            if (rule.selectorText) {
-              rule.selectorText = rule.selectorText
-                .replace(/\\.([\\w_-]+)/g, '.af-class-$1')
-                .replace(/\\[class(.?)="( ?)([^"]+)( ?)"\\]/g, '[class$1="$2af-class-$3$4"]')
-                .replace(/([^\\s][^,]*)(\\s*,?)/g, '.af-view $1$2')
-                .replace(/\\.af-view html/g, '.af-view')
-                .replace(/\\.af-view body/g, '.af-view')
-                ==>${this[_].composeSourceReplacements()}<==
-            }
-          })
-        })
-      })
+      ==>${exp}<==
     `)
   }
 
@@ -230,7 +247,9 @@ class StyleWriter extends Writer {
 
   // Will minify and encapsulate classes
   _transformSheet(sheet) {
-    sheet = encapsulateCSS(sheet, this.source)
+    if (this.encapsulateCSS) {
+      sheet = encapsulateCSS(sheet, this.source)
+    }
     sheet = cleanCSS.minify(sheet).styles
 
     // Make URLs absolute so webpack won't throw any errors

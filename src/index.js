@@ -55,40 +55,39 @@ export const transpile = async (config) => {
     return
   }
 
+  // Anzip file handlers
+  const rules = [
+    {
+      // HTML files -- turn into views
+      pattern: /(^(?!\.))(.+(\.html))$/i,
+      outputContent: true,
+      entryHandler: async (entry) => {
+        htmlFiles.push({
+          name: entry.name,
+          content: await entry.getContent(),
+        })
+      },
+    },
+  ]
+
+  if (config.encapsulateCSS) {
+    rules.push({
+      // CSS files -- encapsulate in af-class
+      pattern: /(^(?!\.))(.+(\.css))$/i,
+      outputContent: true,
+      entryHandler: async (entry) => {
+        cssFiles.push({
+          name: entry.name,
+          content: await entry.getContent(),
+        })
+      },
+    })
+  }
+
   // Process the input zip file
   await anzip(config.input, {
     disableOutput: true, // not using the return value
-    rules: [
-      {
-        // HTML files -- turn into views
-        pattern: /(^(?!\.))(.+(\.html))$/i,
-        outputContent: true,
-        entryHandler: async (entry) => {
-          htmlFiles.push({
-            name: entry.name,
-            content: await entry.getContent(),
-          })
-        },
-      },
-      {
-        // Treat normalize.css as any other public file
-        // (don't encapsulate in af-class) because it increases
-        // the specificity of its selectors which might cause them
-        // to override other styles.
-        pattern: /^normalize\.css$/i,
-      },
-      {
-        // CSS files -- encapsulate in af-class
-        pattern: /(^(?!\.))(.+(\.css))$/i,
-        outputContent: true,
-        entryHandler: async (entry) => {
-          cssFiles.push({
-            name: entry.name,
-            content: await entry.getContent(),
-          })
-        },
-      },
-    ],
+    rules, // file handlers
     // Default handler -- extract files into public folder
     entryHandler: async (entry) => {
       const filename = `${config.output.public}/${entry.name}`
@@ -108,12 +107,14 @@ export const transpile = async (config) => {
   const scriptWriter = new ScriptWriter({
     baseUrl: config.input,
     prefetch: config.prefetch,
+    patchWebflow: config.encapsulateCSS,
   })
 
   const styleWriter = new StyleWriter({
     baseUrl: config.input,
     prefetch: config.prefetch,
-    source: config.srouce,
+    source: config.source,
+    encapsulateCSS: config.encapsulateCSS,
   })
 
   const transpilingHTMLFiles = htmlFiles.map((htmlFile) => {
@@ -143,6 +144,7 @@ export const transpile = async (config) => {
   const encapsulatingFiles = Promise.all(cssFiles.map(async (cssFile) => {
     const filename = `${config.output.public}/${cssFile.name}`
     const css = encapsulateCSS(cssFile.content.toString(), config.source)
+    await mkdirp(path.dirname(filename))
     await fs.writeFile(filename, css)
     return filename
   })).then((paths) => outputFiles.push(...paths))
@@ -192,6 +194,7 @@ const transpileHTMLFile = async (
     name: path.basename(htmlFile.name).split('.').slice(0, -1).join('.'),
     baseUrl: config.input,
     source: config.source,
+    encapsulateCSS: config.encapsulateCSS,
   })
 
   setScripts(scriptWriter, $head, $)
