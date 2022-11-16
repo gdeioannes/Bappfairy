@@ -1,5 +1,5 @@
 import cheerio from 'cheerio'
-import HTMLtoJSX from 'htmltojsx'
+import HTMLtoJSX from '../utils/htmltojsx'
 import base32 from 'base32'
 import path from 'path'
 import statuses from 'statuses'

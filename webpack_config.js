@@ -3,7 +3,6 @@ const webpack = require('webpack')
 const nodeExternals = require('webpack-node-externals')
 
 module.exports = {
-  mode: 'none',
   devtool: 'sourcemap',
   entry: [
     path.resolve(__dirname, 'src')
