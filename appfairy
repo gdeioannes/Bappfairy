@@ -11,7 +11,7 @@ const root = findRoot(process.cwd())
 
 const args = minimist(process.argv.slice(2), {
   string: ['output', 'input', 'source', 'config'],
-  boolean: ['clean', 'prefetch', 'encapsulate-css', 'help'],
+  boolean: ['clean', 'prefetch', 'encapsulate-css', 'version', 'help'],
   alias: {
     in: 'input',
     out: 'output',
