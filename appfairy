@@ -56,7 +56,7 @@ After exporting your Webflow project into a zip file, simply place it in the roo
 in your project and that they have been automatically staged for a git commit. At this point feel free
 to commit those changes.
 
-The commit consists of the following files (regardless if they were added, modified or deleted):
+The changes consist of the following files (regardless if they were added, modified or deleted):
 
 - **public/** (public assets which should be served by our app's server)
 
@@ -72,7 +72,7 @@ The commit consists of the following files (regardless if they were added, modif
 
   - **styles/** (css files that should be imported in index.js)
 
-  - **views/** (contains ConsultFormView - further explanation below)
+  - **views/**
 
 The output can be controlled using a config file named \`af_config.js\` which should be located in
 the root of the project. The config file may (or may not) include some of the following options:
@@ -101,9 +101,9 @@ the root of the project. The config file may (or may not) include some of the fo
 
     - **scripts (string)** - Scripts dir. Defaults to \`src/scripts\`.
 
-    - **styles (string)** - Scripts dir. Defaults to \`src/styles\`.
+    - **styles (string)** - Styles dir. Defaults to \`src/styles\`.
 
-    - **views (string)** - Scripts dir. Defaults to \`src/views\`.
+    - **views (string)** - Views dir. Defaults to \`src/views\`.
 
 Alternatively, you may provide (extra) options through the command line like the following:
 
@@ -197,7 +197,6 @@ if (typeof config.output.src == 'string') {
     scripts: `${config.output.src}/scripts`,
     styles: `${config.output.src}/styles`,
     views: `${config.output.src}/views`,
-    controllers: `${config.output.src}/controllers`,
   }
 }
 if (typeof config.output.src != 'object') {
@@ -215,9 +214,6 @@ if (typeof config.output.src.styles != 'string') {
 if (typeof config.output.src.views != 'string') {
   throw TypeError('config.output.src.views must be a string')
 }
-if (typeof config.output.src.controllers != 'string') {
-  throw TypeError('config.output.src.controllers must be a string')
-}
 if (typeof config.output.migration != 'string') {
   throw TypeError('config.output.migration must be a string')
 }
@@ -232,7 +228,6 @@ config.output = {
     scripts: path.resolve(config.__dirname, config.output.src.scripts),
     styles: path.resolve(config.__dirname, config.output.src.styles),
     views: path.resolve(config.__dirname, config.output.src.views),
-    controllers: path.resolve(config.__dirname, config.output.src.controllers),
   },
   migration: path.resolve(config.__dirname, config.output.migration),
 }

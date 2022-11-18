@@ -11,9 +11,10 @@ const transformProxies = (children = []) => {
 
   React.Children.forEach(children, (child) => {
     const props = Object.assign({}, child.props)
-    Object.defineProperty(props, '_af_visit', {
-      value: false,
-      writable: true,
+
+    Object.defineProperties(props, {
+      _used: { value: false, writable: true },
+      _type: { value: child.type, writable: false },
     })
 
     const name = (props['af-sock'] || child.type).trim().replace(/_/g, '-')
@@ -55,7 +56,7 @@ export const createScope = (children, callback) => {
 
     const visit = (props) => {
       // mark proxy as used
-      props._af_visit = true
+      props._used = true
       return callback(props)
     }
 
@@ -69,7 +70,7 @@ export const createScope = (children, callback) => {
   // print warnings about unused proxies
   Object.entries(proxies).forEach(([name, props]) => {
     ((props instanceof Array) ? props : [props]).forEach((props) => {
-      if (!props._af_visit) {
+      if (!props._used) {
         console.warn(`Warning: proxy '${name}' defined but not used`)
       }
     })
