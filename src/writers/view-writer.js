@@ -544,7 +544,7 @@ class ViewWriter extends Writer {
     `).replace(/\n\n\n/g, '\n\n')
 
     const sockText = Object.entries(sock).sort().map(([ident, name]) =>
-      `${ident}: "${name}",`).join('\n')
+      `${ident}: '${name}',`).join('\n')
 
     return freeText(`
       /*
@@ -578,14 +578,14 @@ class ViewWriter extends Writer {
   _composeScriptsDeclerations() {
     return this[_].scripts.map((script) => {
       if (script.type == 'src') {
-        return `{ src: "${script.body}", isAsync: ${!!script.isAsync} },`
+        return `{ src: '${script.body}', isAsync: ${!!script.isAsync} },`
       }
 
       const minified = uglify.minify(script.body).code
       // Unknown script format ??? fallback to maxified version
       const code = minified || script.body
 
-      return `{ body: "${escape(code)}", isAsync: ${!!script.isAsync} },`
+      return `{ body: '${escape(code)}', isAsync: ${!!script.isAsync} },`
     }).join('\n')
   }
 
