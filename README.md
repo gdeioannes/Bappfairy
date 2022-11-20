@@ -5,7 +5,7 @@ Changes made in this fork:
 - Support for the `af-repeat` attribute ([more](https://github.com/awahlig/Appfairy/commit/010b0409fe644c23889256c18cde1127818f2f1e))
 - Support for page folders (namespaces for pages) ([more](https://github.com/awahlig/Appfairy/commit/56bfc9ba12d69506fff33c954e35d0bd0fe7805c))
 - Support for multiple sockets with the same name (single proxy referring to multiple elements in the view)
-- Support for multiple child views with the same name (only first one is used)
+- Redesigned child-views with namespaces and reusable controllers
 - Encapsulation of CSS disabled by default
 - Bugfixes
 
@@ -28,55 +28,38 @@ Since machine generated assets aren't very easy to maintain due to their complex
 Here's an example of a possible controller:
 
 ```js
-import React from 'react'
-import ConsultFormView from '../views/ConsultFormView'
+import { useState } from 'react';
+import { ConsultFormView, sock } from '../views/ConsultFormView'
 
-class ConsultFormController extends React.Component {
-  state = {}
+const ConsultFormController = () => {
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [description, setDescription] = useState('')
 
-  render() {
-    return (
-      <ConsultFormView>
-        <name onChange={this.setName} />
-        <phone onChange={this.setPhone} />
-        <email onChange={this.setEmail} />
-        <description onChange={this.setDescription} />
-        <submit onClick={this.submit} />
-      </ConsultFormView>
-    )
-  }
-
-  setName = (e) => {
-    this.setState({
-      name: e.target.value
-    })
-  }
-  setPhone = (e) => {
-    this.setState({
-      phone: e.target.value
-    })
-  }
-
-  setEmail = (e) => {
-    this.setState({
-      email: e.target.value
-    })
-  }
-
-  setDescription = (e) => {
-    this.setState({
-      description: e.target.value
-    })
-  }
-
-  submit = () => {
+  const submit = () => {
     alert(`
-      ${this.name}
-      ${this.phone}
-      ${this.email}
-      ${this.description}
+      ${name}
+      ${phone}
+      ${email}
+      ${description}
     `)
   }
+
+  return (
+    <ConsultFormView>
+      <input af-sock={sock.name}
+             onChange={e => setName(e.target.value)} />
+      <input af-sock={sock.phone}
+             onChange={e => setPhone(e.target.value)} />
+      <input af-sock={sock.email}
+             onChange={e => setEmail(e.target.value)} />
+      <input af-sock={sock.description}
+             onChange={e => setDescription(e.target.value)} />
+      <input af-sock={sock.submit}
+             onClick={submit} />
+    </ConsultFormView>
+  )
 }
 
 export default ConsultFormController
