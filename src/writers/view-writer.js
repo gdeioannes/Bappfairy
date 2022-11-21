@@ -457,7 +457,7 @@ class ViewWriter extends Writer {
     })
     if (children.length > 0) children.unshift('')
 
-    const fragments = [
+    const content = [
       this[_].composeStyleImports(),
       this.jsx,
     ].filter(Boolean)
@@ -467,11 +467,9 @@ class ViewWriter extends Writer {
         ==>${this[_].composeSocks()}<==
         ==>${this[_].composeComponentDidMount()}<==
         render() {
-          return createScope(this.props.children, proxy => (
-            <React.Fragment>
-              ==>${fragments.join('\n')}<==
-            </React.Fragment>
-          ))
+          return createScope(this.props.children, proxy => <>
+            ==>${content.join('\n')}<==
+          </>)
         ==>${'}' + children.join('\n\n')}<==
       }
     `)
@@ -628,9 +626,9 @@ function bindJSX(jsx) {
       const { sock, repeat } = decode(encoded)
       // If there are nested sockets
       return /<[\w._-]+-af-sock-\d+-\w+/.test(content) ? (
-        `{proxy('${sock}', '${repeat}', props => <${el} ${mergeProps(attrs)}>{createScope(props.children, proxy => <React.Fragment>${bindJSX(content)}</React.Fragment>)}</${el}>)}`
+        `{proxy('${sock}', '${repeat}', props => <${el} ${mergeProps(attrs)}>{createScope(props.children, proxy => <>${bindJSX(content)}</>)}</${el}>)}`
       ) : (
-        `{proxy('${sock}', '${repeat}', props => <${el} ${mergeProps(attrs)}>{props.children ? props.children : <React.Fragment>${content}</React.Fragment>}</${el}>)}`
+        `{proxy('${sock}', '${repeat}', props => <${el} ${mergeProps(attrs)}>{props.children ? props.children : <>${content}</>}</${el}>)}`
       )
     })
     // Self closing
