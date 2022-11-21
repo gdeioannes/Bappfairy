@@ -4,6 +4,13 @@ import React from 'react'
 
 const scriptStore = {}
 
+class ProxyError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = 'ProxyError'
+  }
+}
+
 const transformProxies = (children = []) => {
   children = [].concat(children).filter(Boolean)
 
@@ -47,33 +54,43 @@ export const createScope = (children, callback) => {
 
   const result = callback((name, repeat, callback) => {
     const props = proxies[name]
-  
+
+    // reconstruct namespace for errors
+    const call = (props) => {
+      try {
+        return callback(props)
+      } catch (err) {
+        if (err instanceof ProxyError) {
+          throw new ProxyError(`${name}.${err.message}`)
+        }
+        throw err
+      }
+    }
+
     if (props == null) {
       // no proxy - use default unless repeat is "?" or "*"
       if (/^[?*]$/.test(repeat)) return null
-      return callback({})
+      return call({})
     }
 
     const visit = (props) => {
       // mark proxy as used
       props._used = true
-      return callback(props)
+      return call(props)
     }
 
     if (!(props instanceof Array)) return visit(props)
     // 2 or more proxies - error unless repeat is "+" or "*"
     if (/^[+*]$/.test(repeat)) return props.map(visit)
 
-    throw new Error(`too many (${props.length}) '${name}' proxies`)
+    throw new ProxyError(`${name}: too many proxies (${props.length})`)
   })
 
-  // print warnings about unused proxies
+  // check for unrecognised proxies
   Object.entries(proxies).forEach(([name, props]) => {
-    ((props instanceof Array) ? props : [props]).forEach((props) => {
-      if (!props._used) {
-        console.warn(`Warning: proxy '${name}' defined but not used`)
-      }
-    })
+    if (!((props instanceof Array) ? props : [props])[0]._used) {
+      throw new ProxyError(`${name}: unrecognised proxy`)
+    }
   })
 
   return result
