@@ -67,20 +67,22 @@ export const createScope = (children, callback) => {
       }
     }
 
-    if (props == null) {
-      // no proxy - use default unless repeat is "?" or "*"
+    // no proxy
+    if (!props) {
+      if (repeat === '!') throw new ProxyError(`${name}: proxy required`)
       if (/^[?*]$/.test(repeat)) return null
       return call({})
     }
 
+    // mark proxy as used
     const visit = (props) => {
-      // mark proxy as used
       props._used = true
       return call(props)
     }
 
+    // single proxy
     if (!(props instanceof Array)) return visit(props)
-    // 2 or more proxies - error unless repeat is "+" or "*"
+    // 2 or more proxies
     if (/^[+*]$/.test(repeat)) return props.map(visit)
 
     throw new ProxyError(`${name}: too many proxies (${props.length})`)

@@ -327,7 +327,7 @@ class ViewWriter extends Writer {
       const sock = getSock($el)
 
       const repeat = ($el.attr('af-repeat') || '').trim()
-      if (!/^[?*+]?$/.test(repeat)) {
+      if (!/^[?*+!]?$/.test(repeat)) {
         throw `error: invalid af-repeat '${repeat}' for socket '${sock}' in view ${this.classPath}`
       }
 
