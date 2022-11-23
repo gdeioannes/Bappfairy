@@ -58,10 +58,14 @@ export const transpile = async (config) => {
   // Anzip file handlers
   const rules = [
     {
-      // HTML files -- turn into views
-      pattern: /(^(?!\.))(.+(\.html))$/i,
+      // HTML files -- turn pages into views
+      pattern: /^(?!\.).+\.html$/i,
       outputContent: true,
       entryHandler: async (entry) => {
+        // Skip pages in "af-ignore" folders
+        if (/(^|\/)af-ignore\//i.test(entry.name)) {
+          return
+        }
         htmlFiles.push({
           name: entry.name,
           content: await entry.getContent(),
@@ -73,7 +77,7 @@ export const transpile = async (config) => {
   if (config.encapsulateCSS) {
     rules.push({
       // CSS files -- encapsulate in af-class
-      pattern: /(^(?!\.))(.+(\.css))$/i,
+      pattern: /^(?!\.).+\.css$/i,
       outputContent: true,
       entryHandler: async (entry) => {
         cssFiles.push({
