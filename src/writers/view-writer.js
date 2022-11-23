@@ -291,45 +291,61 @@ class ViewWriter extends Writer {
 
     const sockets = this[_].sockets = {}
 
-    const getSock = ($el) => {
-      const sock = $el.attr('af-sock').trim()
-      if (!/^[a-z_-][0-9a-z_-]*$/.test(sock)) {
-        throw `error: invalid af-sock '${sock}' in view ${this.classPath}`
-      }
-      return sock.replace(/_/g, '-')
+    const getSockNamespace = ($el) => {
+      return $el.parents('[af-sock]').toArray().reverse()
+        .map((el) => $(el).attr('af-sock'))
     }
 
-    const getType = (tagName) => {
-      if (tagName.startsWith('af-view-')) {
-        const viewData = JSON.parse(base32.decode(tagName.slice(8)))
-        return viewData.name
+    // Validate the "af-sock" and "af-repeat" attributes
+    $('[af-sock]').each((_, el) => {
+      const $el = $(el)
+      const sock = $el.attr('af-sock').trim()
+      const repeat = ($el.attr('af-repeat') || '').trim()
+
+      if (!sock) {
+        // Empty - ignore
+        $el.attr('af-sock', null)
+        $el.attr('af-repeat', null)
+        return
       }
-      return tagName
-    }
+
+      if (!/^[a-z_-][0-9a-z_-]*$/.test(sock)) {
+        const ns = getSockNamespace($el).join('.')
+        throw `error: invalid af-sock='${sock}' under '${ns}' in view ${this.classPath}`
+      }
+
+      if (!/^[?*+!]?$/.test(repeat)) {
+        const sockPath = getSockNamespace($el).concat(sock).join('.')
+        throw `error: invalid af-repeat='${repeat}' for socket '${sockPath}' in view ${this.classPath}`
+      }
+
+      $el.attr('af-sock', sock.replace(/_/g, '-'))
+      $el.attr('af-repeat', repeat)
+    })
 
     // Build the socket tree
     $('[af-sock]').each((_, el) => {
       const $el = $(el)
-      const sock = getSock($el)
+      const sock = $el.attr('af-sock')
+      const repeat = $el.attr('af-repeat')
+
+      let type = $el[0].name
+      if (type.startsWith('af-view-')) {
+        const viewData = JSON.parse(base32.decode(type.slice(8)))
+        type = viewData.name
+      }
 
       const group = $el.parents('[af-sock]').toArray().reverse()
-        .reduce((acc, el) => acc[getSock($(el))].sockets, sockets)
-      group[sock] = {
-        type: getType($el[0].name),
-        repeat: ($el.attr('af-repeat') || '').trim(),
-        sockets: {},
-      }
+        .reduce((acc, el) => acc[$(el).attr('af-sock')].sockets, sockets)
+      group[sock] = { type, repeat, sockets: {} }
     })
 
     // Encode socket data into the tag name
     $('[af-sock]').each((i, el) => {
       const $el = $(el)
-      const sock = getSock($el)
 
-      const repeat = ($el.attr('af-repeat') || '').trim()
-      if (!/^[?*+!]?$/.test(repeat)) {
-        throw `error: invalid af-repeat '${repeat}' for socket '${sock}' in view ${this.classPath}`
-      }
+      const sock = $el.attr('af-sock')
+      const repeat = $el.attr('af-repeat')
 
       $el.attr('af-sock', null)
       $el.attr('af-repeat', null)
@@ -519,14 +535,18 @@ class ViewWriter extends Writer {
     const sock = {}
     const collectHints = (sockets) =>
       Object.entries(sockets).map(([socketName, props]) => {
+        let afSock = `'${socketName}'`
         const ident = socketName.replace(/-/g, '_')
-        sock[ident] = socketName
+        if (ident) {
+          sock[ident] = socketName
+          afSock = `{sock.${ident}}`
+        }
         const comment = props.repeat ? `  // repeat='${props.repeat}'` : ''
         if (Object.keys(props.sockets).length === 0) {
-          return `<${props.type} af-sock={sock.${ident}} />${comment}`
+          return `<${props.type} af-sock=${afSock} />${comment}`
         }
         const text = freeText(`
-          <${props.type} af-sock={sock.${ident}}>${comment}
+          <${props.type} af-sock=${afSock}>${comment}
             ==>${collectHints(props.sockets)}<==
           </${props.type}>
         `)
