@@ -74,16 +74,13 @@ export const createScope = (children, callback) => {
       return call({})
     }
 
-    // mark proxy as used
-    const visit = (props) => {
-      props._used = true
-      return call(props)
-    }
+    // mark proxy as recognised
+    ((props instanceof Array) ? props : [props])[0]._used = true
 
     // single proxy
-    if (!(props instanceof Array)) return visit(props)
+    if (!(props instanceof Array)) return call(props)
     // 2 or more proxies
-    if (/^[+*]$/.test(repeat)) return props.map(visit)
+    if (/^[+*]$/.test(repeat)) return props.map(call)
 
     throw new ProxyError(`${name}: too many proxies (${props.length})`)
   })
