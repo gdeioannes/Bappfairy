@@ -227,7 +227,7 @@ class ViewWriter extends Writer {
       })
 
       if (children.find(viewWriter => viewWriter.className === child.className)) {
-        throw `error: view ${this.classPath}.${child.className} already exists`
+        throw `error: view ${child.classPath} already exists`
       }
 
       const data = { name: child.className }
@@ -314,12 +314,14 @@ class ViewWriter extends Writer {
         throw `error: invalid af-sock='${sock}' under '${ns}' in view ${this.classPath}`
       }
 
+      const normSock = sock.replace(/_/g, '-')
+
       if (!/^[?*+!]?$/.test(repeat)) {
-        const sockPath = getSockNamespace($el).concat(sock).join('.')
+        const sockPath = getSockNamespace($el).concat(normSock).join('.')
         throw `error: invalid af-repeat='${repeat}' for socket '${sockPath}' in view ${this.classPath}`
       }
 
-      $el.attr('af-sock', sock.replace(/_/g, '-'))
+      $el.attr('af-sock', normSock)
       $el.attr('af-repeat', repeat)
     })
 
