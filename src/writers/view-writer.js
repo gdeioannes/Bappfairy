@@ -214,6 +214,13 @@ class ViewWriter extends Writer {
         $el.attr(name, null)
       }
       $el.attr('af-view', null)
+
+      // Provide a default socket if none has been defined
+      if (!$view.attr('af-sock')) {
+        $view.attr('af-sock', name)
+      }
+
+      // Pluck the view html and replace with a placeholder
       $view = $view.insertAfter($el)
       $el.remove()
 
