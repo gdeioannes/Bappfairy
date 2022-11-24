@@ -537,18 +537,14 @@ class ViewWriter extends Writer {
     const sock = {}
     const collectHints = (sockets) =>
       Object.entries(sockets).map(([socketName, props]) => {
-        let afSock = `'${socketName}'`
         const ident = socketName.replace(/-/g, '_')
-        if (ident) {
-          sock[ident] = socketName
-          afSock = `{sock.${ident}}`
-        }
+        sock[ident] = socketName
         const comment = props.repeat ? `  // repeat='${props.repeat}'` : ''
         if (Object.keys(props.sockets).length === 0) {
-          return `<${props.type} af-sock=${afSock} />${comment}`
+          return `<${props.type} af-sock={sock.${ident}} />${comment}`
         }
         const text = freeText(`
-          <${props.type} af-sock=${afSock}>${comment}
+          <${props.type} af-sock={sock.${ident}}>${comment}
             ==>${collectHints(props.sockets)}<==
           </${props.type}>
         `)
