@@ -665,9 +665,9 @@ function bindJSX(jsx) {
       const { sock, repeat } = decode(encoded)
       // If there are nested sockets
       return /<[\w._-]+-af-sock-\d+-\w+/.test(content) ? (
-        `{proxy('${sock}', '${repeat}', props => <${el} ${mergeProps(attrs)}>{createScope(props.children, proxy => <>${bindJSX(content)}</>)}</${el}>)}`
+        `{proxy('${sock}', '${repeat}', (props, T='${el}') => <T ${mergeProps(attrs)}>{createScope(props.children, proxy => <>${bindJSX(content)}</>)}</T>)}`
       ) : (
-        `{proxy('${sock}', '${repeat}', props => <${el} ${mergeProps(attrs)}>{props.children ? props.children : <>${content}</>}</${el}>)}`
+        `{proxy('${sock}', '${repeat}', (props, T='${el}') => <T ${mergeProps(attrs)}>{props.children ? props.children : <>${content}</>}</T>)}`
       )
     })
     // Self closing
@@ -679,9 +679,9 @@ function bindJSX(jsx) {
       // Handle sockets for child views
       if (el.startsWith('af-view-')) {
         el = decode(el.slice(8)).name
-        return `{proxy('${sock}', '${repeat}', props => { const V = this.constructor.${el}, T = props._type || V; return <T ${el}={V} ${mergeProps(attrs)}>{props.children}</T> })}`
+        return `{proxy('${sock}', '${repeat}', (props, T=this.constructor.${el}) => <T ${el}={this.constructor.${el}} ${mergeProps(attrs)}>{props.children}</T>)}`
       }
-      return `{proxy('${sock}', '${repeat}', props => <${el} ${mergeProps(attrs)}>{props.children}</${el}>)}`
+      return `{proxy('${sock}', '${repeat}', (props, T='${el}') => <T ${mergeProps(attrs)}>{props.children}</T>)}`
     })
     // Decode non-socket child views
     .replace(

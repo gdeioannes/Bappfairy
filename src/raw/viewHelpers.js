@@ -24,9 +24,12 @@ const transformProxies = (children = []) => {
       _type: { value: child.type, writable: false },
     })
 
-    const name = (props['af-sock'] || child.type).trim().replace(/_/g, '-')
+    const name = (props['af-sock'] || '').trim().replace(/_/g, '-')
+    if (!name) {
+      throw new ProxyError(`: missing af-sock= on <${child.type}>`)
+    }
     delete props['af-sock']
-
+    
     if (!proxies[name]) {
       proxies[name] = props
     }
@@ -55,12 +58,12 @@ export const createScope = (children, callback) => {
   const result = callback((name, repeat, callback) => {
     const props = proxies[name]
 
-    // reconstruct namespace for errors
     const call = (props) => {
       try {
-        return callback(props)
+        return callback(props, props._type)
       } catch (err) {
         if (err instanceof ProxyError) {
+          // reconstruct namespace for proxy errors
           throw new ProxyError(`${name}.${err.message}`)
         }
         throw err
@@ -69,7 +72,9 @@ export const createScope = (children, callback) => {
 
     // no proxy
     if (!props) {
-      if (repeat === '!') throw new ProxyError(`${name}: proxy required`)
+      if (repeat === '!') {
+        throw new ProxyError(`${name}: required proxy not found`)
+      }
       if (/^[?*]$/.test(repeat)) return null
       return call({})
     }
