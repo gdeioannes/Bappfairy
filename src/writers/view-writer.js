@@ -462,11 +462,22 @@ class ViewWriter extends Writer {
       ]
       scripts.forEach(prefetch)
 
+      /*
+        ==>${this[_].composeViewArray().join('\n')}<==
+      */
+
       ==>${this[_].composeViews('export')}<==
 
       export const sock = ${this.className}.sock
       export default ${this.className}
     `)
+  }
+
+  _composeViewArray() {
+    return [
+      this.classPath,
+      ...this[_].children.map(child => child[_].composeViewArray()).flat()
+    ]
   }
 
   _composeViews(prefix) {
@@ -482,7 +493,7 @@ class ViewWriter extends Writer {
 
     return freeText(`
       ${prefix} class ${this.className} extends React.Component {
-        ==>${this[_].composeSocks()}<==
+        ==>${this[_].composeDocstringAndSocks()}<==
         ==>${this[_].composeComponentDidMount()}<==
         render() {
           return createScope(this.props.children, proxy => <>
@@ -526,10 +537,14 @@ class ViewWriter extends Writer {
     `)
   }
 
-  _composeSocks() {
+  _composeDocstringAndSocks() {
+    const classPath = this.classPath
     if (Object.keys(this[_].sockets).length === 0) {
       return freeText(`
-        /* This view has no sockets. */
+        /*
+          ${classPath}
+          ${'='.repeat(classPath.length)}
+        */
         static sock = Object.freeze({})
       `)
     }
@@ -552,9 +567,8 @@ class ViewWriter extends Writer {
       }).join('\n')
 
     const hintText = freeText(`
-      All proxies defined by this view:
-
-      const sock = ${this.classPath}.sock
+      ${classPath}
+      ${'='.repeat(classPath.length)}
 
       ==>${collectHints(this[_].sockets)}<==
     `).replace(/\n\n\n/g, '\n\n')
