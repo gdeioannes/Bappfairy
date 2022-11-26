@@ -561,12 +561,12 @@ class ViewWriter extends Writer {
       Object.entries(sockets).map(([socketName, props]) => {
         const ident = socketName.replace(/-/g, '_')
         sock[ident] = socketName
-        const comment = props.repeat ? `  // repeat='${props.repeat}'` : ''
+        const comment = props.repeat ? `// af-repeat='${props.repeat}'\n` : ''
         if (Object.keys(props.sockets).length === 0) {
-          return `<${props.type} af-sock={sock.${ident}} />${comment}`
+          return `${comment}<${props.type} af-sock={sock.${ident}} />`
         }
-        const text = freeText(`
-          <${props.type} af-sock={sock.${ident}}>${comment}
+        const text = comment + freeText(`
+          <${props.type} af-sock={sock.${ident}}>
             ==>${collectHints(props.sockets)}<==
           </${props.type}>
         `)
