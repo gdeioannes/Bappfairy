@@ -35,20 +35,21 @@ requireText.promise = (path) => new Promise((resolve, reject) => {
 })
 
 requireText.fromZip = async (zipFile, path) => {
+  path = path.replace(/^\//, '')
   const key = `${zipFile}/${path}`
   let content = cache[key]
-  if (content) {
-    return content;
-  }
+  if (content) return content
 
-  const output = await anzip(zipFile, {
-    pattern: new RegExp(RegExp.escape(path)),
+  await anzip(zipFile, {
     outputContent: true,
+    entryHandler: async (entry) => {
+      if (entry.name === path) {
+        content = (await entry.getContent()).toString()
+      }
+    },
   })
 
-  const entry = output.files[0]
-  if (entry) {
-    content = entry.content.toString()
+  if (content) {
     cache[key] = content
   }
 

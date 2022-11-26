@@ -105,17 +105,6 @@ export const freeLint = (script) => {
   `)
 }
 
-// Calls freeLint() and ensures that 'this' is represented by window
-export const freeContext = (script) => {
-  return freeLint(`
-    (function() {
-
-    ==>${freeText(script)}<==
-
-    }).call(window)
-  `)
-}
-
 // upper -> Upper
 export const upperFirst = (str) => {
   return str.substr(0, 1).toUpperCase() + str.substr(1)

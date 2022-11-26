@@ -1,6 +1,7 @@
 import fetch from 'node-fetch'
 import uglify from 'uglify-js'
 import patches from '../patches'
+import raw from '../raw'
 import { promises as fs } from 'fs'
 import { mkdirp } from 'fs-extra'
 import Writer from './writer'
@@ -10,7 +11,6 @@ import {
   escape,
   freeText,
   freeLint,
-  freeContext,
   padLeft,
   requireText,
   absoluteHref,
@@ -66,17 +66,43 @@ class ScriptWriter extends Writer {
     }
 
     const indexFilePath = `${dir}/index.js`
-    const childFilePaths = [indexFilePath]
+    const outputFiles = []
+
+    // always write helpers
+    const writingHelpers = (async () => {
+      const helpersFilePath = `${dir}/helpers.js`
+      await fs.writeFile(helpersFilePath, raw.scriptHelpers)
+      outputFiles.push(helpersFilePath)
+    })()
 
     if (!options.prefetch) {
-      await fs.writeFile(indexFilePath, this[_].composeScriptLoader())
-      return childFilePaths
+      const writingCommon = (async () => {
+        const commonFilePath = `${dir}/common.js`
+        await fs.writeFile(commonFilePath, this[_].composeCommonLoader())
+        outputFiles.push(commonFilePath)
+      })()
+
+      const writingIndex = (async () => {
+        const indexText = freeLint(`
+          export { default } from './common'
+        `)
+        await fs.writeFile(indexFilePath, indexText)
+        outputFiles.push(indexFilePath)
+      })()
+
+      await Promise.all([
+        writingCommon,
+        writingHelpers,
+        writingIndex,
+      ])
+
+      return outputFiles
     }
 
     const scriptFileNames = this.scripts.map((script, index, { length }) => {
       const fileName = padLeft(index, length / 10 + 1, 0) + '.js'
       const filePath = `${dir}/${fileName}`
-      childFilePaths.push(filePath)
+      outputFiles.push(filePath)
 
       return fileName
     })
@@ -84,99 +110,85 @@ class ScriptWriter extends Writer {
     const fetchingScripts = this.scripts.map(async (script, index) => {
       const scriptFileName = scriptFileNames[index]
 
-      let code = script.type == 'code'
-        ? script.body
-        : /^http/.test(script.body)
-        ? await fetch(script.body)
+      let code = script.body || (/^http/.test(script.src)
+        ? await fetch(script.src)
           .then(res => res.text())
           .then(text => uglify.minify(text).code)
-        : await requireText.fromZip(this.baseUrl, script.body)
+        : await requireText.fromZip(this.baseUrl, script.src))
+
       code = code.replace(/\n\/\/# ?sourceMappingURL=.*\s*$/, '')
-      code = freeContext(code)
+
+      code = freeLint(`
+        /* ${script.body || script.src} */
+
+        (function() {
+
+        ==>${freeText(code)}<==
+
+        }).call(window)
+      `)
 
       return fs.writeFile(`${dir}/${scriptFileName}`, code)
     })
 
-    const scriptsIndexContent = scriptFileNames.map((scriptFileName) => {
-      return `import './${scriptFileName}'`
-    }).join('\n')
+    const writingIndex = (async () => {
+      const scriptsIndexContent = scriptFileNames.map((scriptFileName) => {
+        return `import './${scriptFileName}'`
+      }).join('\n')
 
-    const writingIndex = fs.writeFile(
-      indexFilePath,
-      freeLint(scriptsIndexContent),
-    )
+      await fs.writeFile(indexFilePath, freeLint(scriptsIndexContent))
+      outputFiles.push(indexFilePath)
+    })()
 
     await Promise.all([
       ...fetchingScripts,
+      writingHelpers,
       writingIndex,
     ])
 
-    return childFilePaths
+    return outputFiles
   }
 
-  setScript(src, content, { isAsync } = {}) {
-    let type
-    let body
-
-    if (src) {
-      type = 'src'
-      body = absoluteHref(src)
-    }
-    else {
-      type = 'code'
-      body = uglify.minify(content).code
+  setScript(src, body, { isAsync } = {}) {
+    if (body) {
+      src = undefined
+      body = uglify.minify(body).code
+    } else {
+      src = absoluteHref(src)
+      body = undefined
     }
 
     const exists = this[_].scripts.some((script) => {
-      return script.body == body
+      return script.src === src && script.body === body
     })
 
     if (!exists) {
-      this[_].scripts.push({ type, body, isAsync })
+      this[_].scripts.push({
+        ...(src && { src }),
+        ...(body && { body }),
+        isAsync,
+      })
     }
   }
 
-  _composeScriptLoader() {
+  _composeCommonLoader() {
     const scripts = this[_].scripts.map((script) => {
-      return freeText(`
-        {
-          type: '${script.type}',
-          body: '${escape(script.body, "'")}',
-          isAsync: ${!!script.isAsync},
-        },
-      `)
+      const fields = {
+        ...(script.src && { src: `'${script.src}'` }),
+        ...(script.body && { body: `'${escape(script.body, "'")}'` }),
+        ...(script.isAsync && { isAsync: true }),
+      }
+      const text = Object.entries(fields).map(([key, value]) =>
+        `${key}: ${value}`).join(', ')
+      return `{ ${text} },`
     }).join('\n')
 
     return freeLint(`
-      const scripts = [
+      import { loadScripts } from './helpers'
+
+      const loadingScripts = loadScripts([
         ==>${scripts}<==
-      ]
-
-      const loadingScripts = scripts.concat(null).reduce((active, next) => Promise.resolve(active).then((active) => {
-        const scriptEl = document.createElement('script')
-        scriptEl.type = 'text/javascript'
-        let loading
-
-        if (active.type == 'src') {
-          scriptEl.src = active.body
-
-          loading = new Promise((resolve, reject) => {
-            scriptEl.onload = resolve
-            scriptEl.onerror = reject
-
-            return next
-          })
-        }
-        else {
-          scriptEl.innerHTML = active.body
-
-          loading = next
-        }
-
-        document.head.appendChild(scriptEl)
-
-        return active.isAsync ? next : loading
-      }))
+      ])
 
       export default loadingScripts
     `)
