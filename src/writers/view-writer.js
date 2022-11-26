@@ -679,7 +679,7 @@ function bindJSX(jsx) {
       // Handle sockets for child views
       if (el.startsWith('af-view-')) {
         el = decode(el.slice(8)).name
-        return `{proxy('${sock}', '${repeat}', (props, T=this.constructor.${el}) => <T ${el}={this.constructor.${el}} ${mergeProps(attrs)}>{props.children}</T>)}`
+        return `{proxy('${sock}', '${repeat}', (props, T=this.constructor.${el}) => <T ${mergeProps(attrs)}>{props.children}</T>)}`
       }
       return `{proxy('${sock}', '${repeat}', (props, T='${el}') => <T ${mergeProps(attrs)}>{props.children}</T>)}`
     })
