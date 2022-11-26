@@ -264,14 +264,12 @@ class ViewWriter extends Writer {
 
       if (src) {
         this[_].scripts.push({
-          type: 'src',
-          body: absoluteHref(src),
+          src: absoluteHref(src),
           isAsync,
         })
       }
       else {
         this[_].scripts.push({
-          type: 'code',
           body: $script.html(),
           isAsync,
         })
@@ -461,13 +459,7 @@ class ViewWriter extends Writer {
 
   _compose() {
     return freeLint(`
-      import React from 'react'
-      import { createScope, prefetch, loadScripts } from '${this[_].importPath('helpers')}'
-
-      const scripts = [
-        ==>${this[_].composeScriptsDeclerations()}<==
-      ]
-      scripts.forEach(prefetch)
+      import { View, createScope } from '${this[_].importPath('./helpers')}'
 
       /*
         ==>${this[_].composeViewArray().join('\n')}<==
@@ -493,18 +485,24 @@ class ViewWriter extends Writer {
     })
     if (children.length > 0) children.unshift('')
 
-    const content = [
+    const props = [
+      this[_].composeDocstringAndSocks(),
+      this[_].composeScriptsDeclerations(),
+      this[_].composeComponentDidMount(),
+    ].filter(Boolean)
+
+    const render = [
       this[_].composeStyleImports(),
       this.jsx,
     ].filter(Boolean)
 
     return freeText(`
-      ${prefix} class ${this.className} extends React.Component {
-        ==>${this[_].composeDocstringAndSocks()}<==
-        ==>${this[_].composeComponentDidMount()}<==
+      ${prefix} class ${this.className} extends View {
+        ==>${props.join('\n\n')}<==
+
         render() {
           return createScope(this.props.children, proxy => <>
-            ==>${content.join('\n')}<==
+            ==>${render.join('\n')}<==
           </>)
         ==>${'}' + children.join('\n\n')}<==
       }
@@ -596,38 +594,44 @@ class ViewWriter extends Writer {
   _composeComponentDidMount() {
     const content = [
       this[_].composeWfDataAttrs(),
-      this[_].composeScriptsLoading(),
     ].filter(Boolean)
 
-    if (content.length === 0) {
-      return ''
-    }
+    if (content.length === 0) return ''
 
-    const didMount = freeText(`
+    return freeText(`
       componentDidMount() {
         ==>${content.join('\n\n')}<==
+
+        super.componentDidMount()
       }
     `)
-
-    return `\n${didMount}\n`
   }
 
   _composeScriptsDeclerations() {
-    return this[_].scripts.map((script) => {
-      if (script.type == 'src') {
-        return `{ src: '${script.body}', isAsync: ${!!script.isAsync} },`
+    const content = this[_].scripts.map((script) => {
+      const getBody = () => {
+        const minified = uglify.minify(script.body).code
+        // Unknown script format ??? fallback to maxified version
+        const code = minified || script.body
+        return `${escape(code, "'")}`
       }
+      const fields = {
+        ...(script.src && { src: `'${script.src}'` }),
+        ...(script.body && { body: `'${getBody()}'` }),
+        ...(script.isAsync && { isAsync: true }),
+      }
+      const text = Object.entries(fields).map(([key, value]) =>
+        `${key}: ${value}`).join(', ')
+      return `{ ${text} },`
+    })
 
-      const minified = uglify.minify(script.body).code
-      // Unknown script format ??? fallback to maxified version
-      const code = minified || script.body
+    if (content.length === 0) return ''
 
-      return `{ body: '${escape(code)}', isAsync: ${!!script.isAsync} },`
-    }).join('\n')
-  }
-
-  _composeScriptsLoading() {
-    return this[_].scripts.length > 0 ? 'loadScripts(scripts)' : ''
+    return freeText(`
+      static scripts = Object.freeze([
+        ==>${content.join('\n')}<==
+      ])
+    `)
   }
 
   _composeWfDataAttrs() {

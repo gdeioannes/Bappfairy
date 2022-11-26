@@ -1,14 +1,38 @@
-/* eslint-disable */
-
 import React from 'react'
-
-const scriptStore = {}
+import { loadScripts } from '../scripts/helpers'
 
 class ProxyError extends Error {
   constructor(message) {
     super(message)
     this.name = 'ProxyError'
   }
+}
+
+export class View extends React.Component {
+  componentDidMount() {
+    const scripts = this.constructor.scripts
+    if (scripts) {
+      loadScripts(scripts).then(ix2init)
+    }
+  }
+
+  componentDidUpdate() {
+    ix2init()
+  }
+}
+
+export const ix2init = () => {
+  if (ix2init.busy) return
+  ix2init.busy = true
+
+  // eslint-disable-next-line no-undef
+  window?.Webflow?.require('ix2').init()
+  // eslint-disable-next-line no-undef
+  document.dispatchEvent(new CustomEvent('IX2_PAGE_UPDATE'))
+
+  Promise.resolve().then(() => {
+    ix2init.busy = false
+  })
 }
 
 const transformProxies = (children = []) => {
@@ -99,55 +123,3 @@ export const createScope = (children, callback) => {
 
   return result
 }
-
-export const prefetch = (script) => {
-  if (script.body) return Promise.resolve(script.body)
-  if (!script.src) return Promise.resolve('')
-
-  if (!scriptStore[script.src]) {
-    scriptStore[script.src] = fetch(script.src).then(r => r.text())
-  }
-  return scriptStore[script.src]
-}
-
-export const loadScripts = (scripts) => {
-  const result = scripts.concat(null).reduce((active, next) =>
-    Promise.resolve(active).then((active) => {
-      const loading = prefetch(active).then((script) => {
-        new Function(`
-          with (this) {
-            eval(arguments[0])
-          }
-        `).call(window, script)
-
-        return next
-      })
-
-      return active.isAsync ? next : loading
-    })
-  )
-
-  return Promise.resolve(result)
-}
-
-/*
- * Helper function to re-init the webflow.js code.
- *
- * This re-attaches event listeners to all elements
- * with animation triggers, among other things.
- * 
- * It might've to be called when a view is re-rendered after
- * new proxies have been added for animated elements.
- * Event listeners aren't attached to new elements automatically.
- */
-export const reinitWebflow = () => {
-  // Unregister event listeners of IX2
-  window.Webflow?.require('ix2')?.destroy()
-
-  // Re-initialize Webflow
-  return loadScripts([
-    { src: '/js/webflow.js', isAsync: false },
-  ])
-}
-
-/* eslint-enable */
