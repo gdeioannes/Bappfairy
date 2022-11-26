@@ -9,6 +9,10 @@ export default {
     return requireText(resolve('scriptHelpers.js'))
   },
 
+  get styleHelpers() {
+    return requireText(resolve('styleHelpers.js'))
+  },
+
   get viewHelpers() {
     return requireText(resolve('viewHelpers.js'))
   },

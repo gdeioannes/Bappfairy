@@ -1,6 +1,7 @@
 import CleanCSS from 'clean-css'
 import fetch from 'node-fetch'
 import path from 'path'
+import raw from '../raw'
 import { promises as fs } from 'fs'
 import { mkdirp } from 'fs-extra'
 import { encapsulateCSS, absoluteHref } from '../utils'
@@ -78,17 +79,42 @@ class StyleWriter extends Writer {
     }
 
     const indexFilePath = `${dir}/index.js`
-    const childFilePaths = [indexFilePath]
-
+    const outputFiles = []
+    
     if (!options.prefetch) {
-      await fs.writeFile(indexFilePath, this[_].composeStyleLoader())
-      return childFilePaths
+      const writingCommon = (async () => {
+        const commonFilePath = `${dir}/common.js`
+        await fs.writeFile(commonFilePath, this[_].composeCommonLoader())
+        outputFiles.push(commonFilePath)
+      })()
+
+      const writingHelpers = (async () => {
+        const helpersFilePath = `${dir}/helpers.js`
+        await fs.writeFile(helpersFilePath, raw.styleHelpers)
+        outputFiles.push(helpersFilePath)
+      })()
+  
+      const writingIndex = (async () => {
+        const indexText = freeLint(`
+          export { default } from './common'
+        `)
+        await fs.writeFile(indexFilePath, indexText)
+        outputFiles.push(indexFilePath)
+      })()
+
+      await Promise.all([
+        writingCommon,
+        writingHelpers,
+        writingIndex,
+      ])
+
+      return outputFiles
     }
 
     const styleFileNames = this.styles.map((style, index, { length }) => {
       const fileName = padLeft(index, length / 10 + 1, 0) + '.css'
       const filePath = `${dir}/${fileName}`
-      childFilePaths.push(filePath)
+      outputFiles.push(filePath)
 
       return fileName
     })
@@ -96,71 +122,70 @@ class StyleWriter extends Writer {
     const fetchingStyles = this.styles.map(async (style, index) => {
       const styleFileName = styleFileNames[index]
 
-      const sheet = style.type == 'sheet'
+      const sheet = style.body
         ? style.body
-        : /^http/.test(style.body)
-        ? await fetch(style.body).then(res => res.text())
-        : await requireText.fromZip(this.baseUrl, style.body)
+        : /^http/.test(style.href)
+        ? await fetch(style.href).then(res => res.text())
+        : await requireText.fromZip(this.baseUrl, style.href)
 
       return fs.writeFile(`${dir}/${styleFileName}`, this[_].transformSheet(sheet))
     })
 
-    const stylesIndexContent = styleFileNames.map((styleFileName) => {
-      return `import './${styleFileName}'`
-    }).join('\n')
+    const writingIndex = (async () => {
+      const stylesIndexContent = styleFileNames.map((styleFileName) => {
+        return `import './${styleFileName}'`
+      }).join('\n')
 
-    const writingIndex = fs.writeFile(
-      indexFilePath,
-      freeLint(stylesIndexContent),
-    )
+      await fs.writeFile(indexFilePath, freeLint(stylesIndexContent))
+      outputFiles.push(indexFilePath)
+    })()
 
     await Promise.all([
       ...fetchingStyles,
       writingIndex,
     ])
 
-    return childFilePaths
+    return outputFiles
   }
 
-  setStyle(href, content) {
-    let type
-    let body
-
+  setStyle(href, body) {
     if (href) {
-      type = 'href'
-      body = absoluteHref(href)
-    }
-    else {
-      type = 'sheet'
-      body = content
+      href = absoluteHref(href)
+      body = undefined
+    } else {
+      href = undefined
     }
 
     const exists = this[_].styles.some((style) => {
-      return style.body == body
+      return style.href === href && style.body === body
     })
 
     if (!exists) {
-      this[_].styles.push({ type, body })
+      this[_].styles.push({
+        ...(href && { href }),
+        ...(body && { body }),
+      })
     }
   }
 
-  _composeStyleLoader() {
+  _composeCommonLoader() {
     this[_].styles.forEach((style) => {
-      if (style.type == 'sheet') {
+      if (style.body) {
         style.body = this[_].transformSheet(style.body)
       }
     })
 
     const styles = this[_].styles.map((style) => {
-      return freeText(`
-        {
-          type: '${style.type}',
-          body: '${escape(style.body, "'")}',
-        },
-      `)
+      const fields = {
+        ...(style.href && { href: `'${style.href}'` }),
+        ...(style.body && { body: `'${escape(style.body, "'")}'` }),
+      }
+      const text = Object.entries(fields).map(([key, value]) =>
+        `${key}: ${value}`).join(', ')
+      return `{ ${text} },`
     }).join('\n')
 
-    const exp = this.encapsulateCSS
+    const fix = this.encapsulateCSS
       ? freeText(`
         export default Promise.all(loadingStyles).then(() => {
           const styleSheets = Array.from(document.styleSheets).filter((styleSheet) => {
@@ -183,45 +208,16 @@ class StyleWriter extends Writer {
           })
         })
       `)
-      : freeText(`
-        export default Promise.all(loadingStyles)
-      `)
+      : ''
 
     return freeLint(`
-      const styles = [
+      import { loadStyles } from './helpers'
+
+      const loadingStyles = loadStyles([
         ==>${styles}<==
-      ]
-
-      const loadingStyles = styles.map((style) => {
-        let styleEl
-        let loading
-
-        if (style.type == 'href') {
-          styleEl = document.createElement('link')
-
-          loading = new Promise((resolve, reject) => {
-            styleEl.onload = resolve
-            styleEl.onerror = reject
-          })
-
-          styleEl.rel = 'stylesheet'
-          styleEl.type = 'text/css'
-          styleEl.href = style.body
-        }
-        else {
-          styleEl = document.createElement('style')
-          styleEl.type = 'text/css'
-          styleEl.innerHTML = style.body
-
-          loading = Promise.resolve()
-        }
-
-        document.head.appendChild(styleEl)
-
-        return loading
-      })
-
-      ==>${exp}<==
+      ])
+      ==>${fix}<==
+      export default loadingStyles
     `)
   }
 
