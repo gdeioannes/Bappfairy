@@ -9,7 +9,7 @@ module.exports = {
   ],
   output: {
     path: path.resolve(__dirname, 'build'),
-    filename: 'appfairy.js',
+    filename: 'bappfairy.js',
     library: '',
     libraryTarget: 'commonjs2'
   },
