@@ -1,7 +1,5 @@
 Changes made in this fork:
 
-
-
 This version is published in the `@gdeioannes` scope and can be installed using:
 
     $ npm install @gdeioannes/bappfairy -g
